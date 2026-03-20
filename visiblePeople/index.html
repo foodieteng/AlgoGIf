@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LC 1944 — Visible People in a Queue</title>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{background:#0a0c13;font-family:'JetBrains Mono','Fira Code','SF Mono','Consolas',monospace}
+    #app{min-height:100vh}
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.2/babel.min.js"></script>
+  <script type="text/babel">
+    /* ========================================================
+       LC 1944 — Number of Visible People in a Queue
+       Monotone Stack Visualization
+       ======================================================== */
+
+    const { useState, useEffect, useRef } = React;
+
+    const HEIGHTS_DEFAULT = [10, 6, 8, 5, 11, 9];
+
+    function simulate(heights) {
+      const n = heights.length;
+      const answer = new Array(n).fill(0);
+      const stack = [];
+      const steps = [];
+
+      steps.push({ type:"init", i:-1, stack:[], answer:[...answer],
+        desc:"Start from the rightmost person. Stack is empty.", popIdx:-1, seeLines:[] });
+
+      for (let i = n - 1; i >= 0; i--) {
+        const h = heights[i];
+        steps.push({ type:"arrive", i, stack:stack.map(s=>({...s})), answer:[...answer],
+          desc:`Person ${i} (height ${h}) looks to the right. Who can they see?`, popIdx:-1, seeLines:[] });
+
+        const seen = [];
+        while (stack.length > 0 && stack[stack.length-1].height < h) {
+          const popped = stack.pop();
+          answer[i]++;
+          seen.push(popped.index);
+          steps.push({ type:"pop", i, stack:stack.map(s=>({...s})), answer:[...answer],
+            desc:`Person ${i} sees person ${popped.index} (height ${popped.height}) \u2014 shorter, pop. Count = ${answer[i]}`,
+            popIdx:popped.index, seeLines:[...seen] });
+        }
+
+        if (stack.length > 0) {
+          const top = stack[stack.length-1];
+          answer[i]++;
+          seen.push(top.index);
+          steps.push({ type:"seeTaller", i, stack:stack.map(s=>({...s})), answer:[...answer],
+            desc:`Person ${i} also sees person ${top.index} (height ${top.height}) \u2014 taller, blocks view. Count = ${answer[i]}`,
+            popIdx:-1, seeLines:[...seen], tallerIdx:top.index });
+        } else if (seen.length === 0) {
+          steps.push({ type:"seeNone", i, stack:stack.map(s=>({...s})), answer:[...answer],
+            desc:`Person ${i} sees nobody. Stack was empty.`, popIdx:-1, seeLines:[] });
+        }
+
+        stack.push({ index:i, height:h });
+        steps.push({ type:"push", i, stack:stack.map(s=>({...s})), answer:[...answer],
+          desc:`Push person ${i} (height ${h}) onto the stack.`, popIdx:-1, seeLines:[...seen] });
+      }
+
+      steps.push({ type:"done", i:-1, stack:stack.map(s=>({...s})), answer:[...answer],
+        desc:`Done! Final answer: [${answer.join(", ")}]`, popIdx:-1, seeLines:[] });
+      return steps;
+    }
+
+    const P = {
+      bg:"#0a0c13", card:"#12141f", border:"#1e2235", text:"#cdd3e0", dim:"#555d78",
+      cyan:"#22d3ee", green:"#34d399", orange:"#fb923c", yellow:"#fbbf24",
+      red:"#f87171", blue:"#60a5fa", purple:"#a78bfa", pink:"#f472b6",
+    };
+    const PC = ["#22d3ee","#34d399","#fb923c","#a78bfa","#f472b6","#fbbf24","#60a5fa","#f87171","#818cf8","#2dd4bf","#e879f9","#facc15"];
+    const TB = {
+      init:{label:"INIT",color:P.dim}, arrive:{label:"LOOK RIGHT",color:P.cyan},
+      pop:{label:"POP (SEE)",color:P.green}, seeTaller:{label:"SEE TALLER",color:P.orange},
+      seeNone:{label:"SEE NONE",color:P.dim}, push:{label:"PUSH",color:P.purple},
+      done:{label:"COMPLETE",color:P.yellow},
+    };
+    const bS = c=>({padding:"5px 13px",borderRadius:7,border:"none",background:c,color:"#000",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"});
+    const sS = {padding:"4px 8px",borderRadius:6,border:"1px solid #1e2235",background:"#0a0c13",color:"#cdd3e0",fontSize:11,fontFamily:"inherit"};
+
+    function App() {
+      const [heights, setHeights] = useState(HEIGHTS_DEFAULT);
+      const [steps, setSteps] = useState([]);
+      const [cur, setCur] = useState(-1);
+      const [playing, setPlaying] = useState(false);
+      const [speed, setSpeed] = useState(900);
+      const listRef = useRef(null);
+
+      useEffect(()=>{ setSteps(simulate(heights)); setCur(-1); setPlaying(false); },[heights]);
+      useEffect(()=>{
+        if(!playing||cur>=steps.length-1){if(cur>=steps.length-1)setPlaying(false);return;}
+        const t=setTimeout(()=>setCur(c=>c+1),speed);return()=>clearTimeout(t);
+      },[playing,cur,steps.length,speed]);
+      useEffect(()=>{
+        if(listRef.current&&cur>=0){const el=listRef.current.children[cur];if(el)el.scrollIntoView({block:"nearest",behavior:"smooth"});}
+      },[cur]);
+
+      const snap=cur>=0&&cur<steps.length?steps[cur]:null;
+      const n=heights.length;
+      const aW=680,aH=260;
+      const bW=Math.min(70,(aW-20)/n-8);
+      const bG=(aW-bW*n)/(n+1);
+      const mH=Math.max(...heights);
+      const bX=i=>bG+i*(bW+bG);
+      const bHt=h=>(h/mH)*(aH-50);
+      const bY=h=>aH-20-bHt(h);
+      const stk=snap?snap.stack:[];
+      const ci=snap?snap.i:-1;
+      const sl=snap?snap.seeLines:[];
+      const presets=[
+        {label:"Example 1",data:[10,6,8,5,11,9]},{label:"Example 2",data:[5,1,2,3,10]},
+        {label:"Sorted \u2191",data:[1,2,3,4,5,6]},{label:"Sorted \u2193",data:[6,5,4,3,2,1]},
+      ];
+      const isP=d=>JSON.stringify(heights)===JSON.stringify(d);
+
+      return (
+        <div style={{background:P.bg,minHeight:"100vh",color:P.text,fontFamily:"'JetBrains Mono','Fira Code','SF Mono',monospace",padding:16,boxSizing:"border-box"}}>
+          <div style={{maxWidth:880,margin:"0 auto"}}>
+            <h1 style={{fontSize:22,fontWeight:800,textAlign:"center",margin:"0 0 2px",color:P.cyan,letterSpacing:1}}>
+              LC 1944 — Number of Visible People in a Queue</h1>
+            <p style={{textAlign:"center",color:P.dim,fontSize:12,margin:"0 0 16px"}}>
+              Monotone Stack — iterate right to left, pop shorter, see first taller</p>
+
+            <div style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap",marginBottom:12}}>
+              {presets.map((p,pi)=>(
+                <button key={pi} onClick={()=>setHeights(p.data)} style={{
+                  padding:"5px 12px",borderRadius:7,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit",
+                  border:`1.5px solid ${isP(p.data)?P.cyan:P.border}`,
+                  background:isP(p.data)?"rgba(34,211,238,0.12)":P.card,
+                  color:isP(p.data)?P.cyan:P.dim}}>{p.label}: [{p.data.join(",")}]</button>
+              ))}
+            </div>
+
+            <div style={{background:P.card,borderRadius:10,padding:"10px 16px",marginBottom:12,display:"flex",gap:10,alignItems:"center",justifyContent:"center",flexWrap:"wrap",border:`1px solid ${P.border}`}}>
+              <button onClick={()=>{setCur(-1);setPlaying(false);}} style={bS(P.dim)}>Reset</button>
+              <button onClick={()=>{setCur(c=>Math.max(-1,c-1));setPlaying(false);}} style={bS(P.purple)} disabled={cur<=-1}>{"\u25C0"}</button>
+              <button onClick={()=>{if(cur>=steps.length-1){setCur(-1);setTimeout(()=>setPlaying(true),80);}else setPlaying(p=>!p);}} style={bS(P.cyan)}>{playing?"\u23F8 Pause":"\u25B6 Play"}</button>
+              <button onClick={()=>{setCur(c=>Math.min(steps.length-1,c+1));setPlaying(false);}} style={bS(P.blue)} disabled={cur>=steps.length-1}>{"\u25B6"}</button>
+              <select value={speed} onChange={e=>setSpeed(+e.target.value)} style={sS}>
+                <option value={1400}>Slow</option><option value={900}>Medium</option><option value={450}>Fast</option>
+              </select>
+              <span style={{fontSize:11,color:P.dim}}>Step {cur+1} / {steps.length}</span>
+            </div>
+
+            <div style={{background:P.card,borderRadius:12,padding:"12px 8px 8px",marginBottom:12,border:`1px solid ${P.border}`,overflow:"hidden"}}>
+              <svg width={aW} height={aH+30} viewBox={`0 0 ${aW} ${aH+30}`} style={{display:"block",margin:"0 auto"}}>
+                {sl.map(ti=>{
+                  if(ci<0||ti<0)return null;
+                  const x1=bX(ci)+bW/2,y1=bY(heights[ci])-2,x2=bX(ti)+bW/2,y2=bY(heights[ti])-2;
+                  const isTaller=snap&&snap.tallerIdx===ti;
+                  return <line key={`s-${ti}`} x1={x1} y1={y1} x2={x2} y2={y2} stroke={isTaller?P.orange:P.green} strokeWidth={2.5} strokeDasharray={isTaller?"8,4":"none"} opacity={0.7}/>;
+                })}
+                {heights.map((h,idx)=>{
+                  const x=bX(idx),y=bY(h),bh=bHt(h);
+                  const isA=idx===ci,isPopped=snap&&snap.popIdx===idx,isSeen=sl.includes(idx),isInStk=stk.some(s=>s.index===idx);
+                  let fill=PC[idx%PC.length],op=0.35,sw=0,st="none";
+                  if(isA){op=1;sw=3;st="#fff";}else if(isPopped){op=0.9;sw=2;st=P.green;}else if(isSeen){op=0.8;}else if(isInStk){op=0.6;}
+                  return(
+                    <g key={idx}>
+                      <rect x={x} y={y} width={bW} height={bh} rx={5} fill={fill} opacity={op} stroke={st} strokeWidth={sw} style={{transition:"all 0.3s"}}/>
+                      <text x={x+bW/2} y={y-6} textAnchor="middle" fontSize={13} fontWeight={700} fill={isA?"#fff":(isSeen?P.text:P.dim)}>{h}</text>
+                      <text x={x+bW/2} y={aH+2} textAnchor="middle" fontSize={11} fill={P.dim}>i={idx}</text>
+                      {snap&&snap.answer[idx]>0&&(<g><circle cx={x+bW/2} cy={aH+20} r={11} fill={snap.type==="done"?P.green:P.blue} opacity={0.9}/><text x={x+bW/2} y={aH+25} textAnchor="middle" fontSize={12} fontWeight={700} fill="#fff">{snap.answer[idx]}</text></g>)}
+                      {isA&&(<g><polygon points={`${x+bW/2-6},${y-22} ${x+bW/2+6},${y-22} ${x+bW/2},${y-14}`} fill={P.cyan}/><text x={x+bW/2} y={y-28} textAnchor="middle" fontSize={10} fontWeight={700} fill={P.cyan}>current</text></g>)}
+                    </g>);
+                })}
+              </svg>
+            </div>
+
+            <div style={{display:"flex",gap:10,marginBottom:12}}>
+              <div style={{flex:1,background:P.card,borderRadius:10,padding:"10px 14px",border:`1px solid ${P.border}`,minHeight:100}}>
+                <p style={{margin:"0 0 8px",fontSize:12,color:P.purple,fontWeight:700}}>STACK (top → bottom)</p>
+                {stk.length===0?<p style={{fontSize:12,color:P.dim,margin:0}}>[ empty ]</p>
+                :<div style={{display:"flex",gap:5,flexWrap:"wrap"}}>{[...stk].reverse().map((s,si)=>(
+                  <div key={si} style={{padding:"4px 10px",borderRadius:6,fontSize:12,fontWeight:600,background:PC[s.index%PC.length],color:"#000",opacity:0.85}}>[{s.index}] h={s.height}</div>
+                ))}</div>}
+              </div>
+              <div style={{flex:1,background:P.card,borderRadius:10,padding:"10px 14px",border:`1px solid ${P.border}`,minHeight:100}}>
+                <p style={{margin:"0 0 8px",fontSize:12,color:P.green,fontWeight:700}}>ANSWER[ ]</p>
+                <div style={{display:"flex",gap:5}}>{(snap?snap.answer:new Array(n).fill(0)).map((v,idx)=>(
+                  <div key={idx} style={{width:40,height:40,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",borderRadius:6,
+                    background:v>0?"rgba(52,211,153,0.15)":"rgba(255,255,255,0.03)",
+                    border:`1.5px solid ${idx===ci?P.cyan:(v>0?P.green:P.border)}`,fontSize:14,fontWeight:700,color:v>0?P.green:P.dim}}>
+                    {v}<span style={{fontSize:8,color:P.dim}}>{idx}</span></div>
+                ))}</div>
+              </div>
+            </div>
+
+            <div style={{background:P.card,borderRadius:10,padding:"12px 16px",marginBottom:12,border:`1px solid ${P.border}`,minHeight:60}}>
+              {snap?(<div>
+                <span style={{display:"inline-block",padding:"2px 10px",borderRadius:5,fontSize:10,fontWeight:700,marginBottom:6,marginRight:8,
+                  background:(TB[snap.type]||{}).color||P.dim,color:"#000"}}>{(TB[snap.type]||{}).label||snap.type}</span>
+                <p style={{margin:"6px 0 0",fontSize:14,lineHeight:1.6}}>{snap.desc}</p>
+                {snap.type==="pop"&&<p style={{margin:"6px 0 0",fontSize:12,color:P.green}}>{"\uD83D\uDCA1"} Shorter person is visible but doesn't block — pop off, keep looking.</p>}
+                {snap.type==="seeTaller"&&<p style={{margin:"6px 0 0",fontSize:12,color:P.orange}}>{"\uD83D\uDCA1"} Taller person blocks everything behind. +1, stop.</p>}
+                {snap.type==="push"&&<p style={{margin:"6px 0 0",fontSize:12,color:P.purple}}>{"\uD83D\uDCA1"} Push current onto stack as candidate for people further left.</p>}
+                {snap.type==="done"&&<p style={{margin:"6px 0 0",fontSize:14,color:P.yellow,fontWeight:700}}>{"\uD83C\uDFAF"} answer = [{snap.answer.join(", ")}]</p>}
+              </div>):(<p style={{margin:0,fontSize:13,color:P.dim}}>Press {"\u25B6"} to start</p>)}
+            </div>
+
+            <div style={{display:"flex",gap:16,justifyContent:"center",flexWrap:"wrap",fontSize:11,marginBottom:12}}>
+              {[{color:P.cyan,label:"Current person"},{color:P.green,label:"Visible (shorter → popped)"},{color:P.orange,label:"Visible (taller → blocks)"},{color:P.purple,label:"Pushed to stack"}].map(item=>(
+                <div key={item.label} style={{display:"flex",alignItems:"center",gap:5}}>
+                  <div style={{width:10,height:10,borderRadius:3,background:item.color}}/><span style={{color:P.dim}}>{item.label}</span></div>
+              ))}
+            </div>
+
+            <div style={{background:P.card,borderRadius:10,padding:"14px 16px",marginBottom:12,border:`1px solid ${P.border}`,fontSize:13,lineHeight:1.8,color:P.dim}}>
+              <p style={{margin:"0 0 6px",color:P.text,fontWeight:700,fontSize:15}}>Algorithm — Monotone Stack (right → left)</p>
+              <p style={{margin:0}}>
+                <span style={{color:P.cyan}}>{"\u2776"}</span> Iterate <b style={{color:P.text}}>right to left</b>. Maintain a decreasing stack.<br/>
+                <span style={{color:P.green}}>{"\u2777"}</span> <b style={{color:P.text}}>Pop shorter</b>: each pop = one visible person.<br/>
+                <span style={{color:P.orange}}>{"\u2778"}</span> <b style={{color:P.text}}>First taller</b> = visible too, blocks behind → +1, don't pop.<br/>
+                <span style={{color:P.purple}}>{"\u2779"}</span> <b style={{color:P.text}}>Push current</b> as candidate for people further left.<br/>
+                <span style={{color:P.yellow}}>{"\u277A"}</span> <b style={{color:P.text}}>O(N)</b> time — each element pushed & popped at most once.
+              </p>
+            </div>
+
+            <div ref={listRef} style={{background:P.card,borderRadius:10,padding:"10px 12px",border:`1px solid ${P.border}`,maxHeight:220,overflowY:"auto"}}>
+              <p style={{fontSize:11,color:P.dim,margin:"0 0 6px"}}>All steps (click to jump):</p>
+              {steps.map((s,i)=>(
+                <div key={i} onClick={()=>{setCur(i);setPlaying(false);}} style={{
+                  padding:"4px 8px",marginBottom:2,borderRadius:5,fontSize:11,cursor:"pointer",
+                  background:i===cur?"rgba(255,255,255,0.06)":"transparent",opacity:i<=cur?1:0.3,
+                  borderLeft:`3px solid ${i===cur?((TB[s.type]||{}).color||P.dim):"transparent"}`,
+                  transition:"all 0.15s",lineHeight:1.5}}>
+                  <span style={{color:P.dim,marginRight:6}}>{i+1}.</span>
+                  <span style={{color:(TB[s.type]||{}).color||P.dim,fontWeight:600,fontSize:10,marginRight:4}}>[{(TB[s.type]||{}).label}]</span>
+                  {s.desc}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    /* ── Mount ── */
+    ;(function(){
+      const container = document.getElementById("app");
+      ReactDOM.createRoot(container).render(React.createElement(App));
+    })();
+  </script>
+</body>
+</html>
