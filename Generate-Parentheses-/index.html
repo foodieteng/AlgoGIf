@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1200">
+<title>Generate Parentheses — Recursion Tree Visualizer</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #0b0d14;
+    --bg-main: #0f1117;
+    --bg-card: #1a1d27;
+    --bg-card-hover: #1e2130;
+    --bg-code: #13151c;
+    --border: #2a2d3a;
+    --border-light: #353848;
+    --text-primary: #e8ecf1;
+    --text-body: #c9cdd4;
+    --text-muted: #6b7280;
+    --text-dim: #4b5563;
+    --accent-blue: #3b82f6;
+    --accent-indigo: #6366f1;
+    --accent-green: #10b981;
+    --accent-emerald: #34d399;
+    --accent-amber: #f59e0b;
+    --accent-red: #ef4444;
+    --accent-pink: #ec4899;
+    --node-open-bg: #0d3326;
+    --node-open-border: #10b981;
+    --node-open-text: #34d399;
+    --node-close-bg: #1a2742;
+    --node-close-border: #3b82f6;
+    --node-close-text: #60a5fa;
+    --node-result-bg: #1a2e0a;
+    --node-result-border: #22c55e;
+    --node-result-text: #4ade80;
+    --node-pruned-bg: #2a1215;
+    --node-pruned-border: #7f1d1d;
+    --node-pruned-text: #f87171;
+    --node-unvisited-bg: #16181f;
+    --node-unvisited-border: #2a2d3a;
+    --node-unvisited-text: #4b5563;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg-main);
+    color: var(--text-body);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  /* ── Header ── */
+  .page-header {
+    text-align: center;
+    padding: 48px 40px 0;
+  }
+  .page-header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.5px;
+  }
+  .page-header .subtitle {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+  .page-header .tags {
+    margin-top: 12px;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    font-size: 13px;
+  }
+  .page-header .tags span { color: #60a5fa; }
+  .page-header .tags .sep { color: var(--text-dim); }
+  .page-header .divider {
+    width: 48px; height: 3px;
+    background: var(--accent-blue);
+    border-radius: 2px;
+    margin: 16px auto 0;
+  }
+
+  /* ── Main Layout ── */
+  .main-content {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 32px 40px 60px;
+  }
+
+  /* ── Section Title ── */
+  .section-title {
+    text-align: center;
+    margin: 36px 0 20px;
+  }
+  .section-title span {
+    display: inline-block;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 5px 18px;
+    border-radius: 18px;
+    letter-spacing: 0.3px;
+  }
+
+  /* ── Info Cards ── */
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 20px 0;
+  }
+  .info-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+  }
+  .info-card h3 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 8px;
+  }
+  .info-card p {
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text-body);
+  }
+  .info-card code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    background: var(--bg-code);
+    padding: 1px 5px;
+    border-radius: 4px;
+    color: #e5a07b;
+  }
+
+  /* ── Controls ── */
+  .controls-bar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 20px;
+    margin: 24px 0 16px;
+  }
+  .control-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .control-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+  .control-group select {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    padding: 5px 10px;
+    cursor: pointer;
+    outline: none;
+  }
+  .control-group select:hover { border-color: var(--border-light); }
+
+  .btn-group { display: flex; gap: 4px; }
+  .btn {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-body);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12.5px;
+    font-weight: 500;
+    padding: 5px 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn:hover { background: var(--bg-card-hover); border-color: var(--border-light); }
+  .btn:active { transform: scale(0.97); }
+  .btn.primary {
+    background: var(--accent-blue);
+    border-color: var(--accent-blue);
+    color: #fff;
+  }
+  .btn.primary:hover { background: #2563eb; }
+
+  .step-counter {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-left: auto;
+  }
+
+  .speed-control {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .speed-control input[type="range"] {
+    width: 60px;
+    accent-color: var(--accent-blue);
+  }
+
+  /* ── Legend ── */
+  .legend {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin: 0 0 16px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .legend-dot {
+    width: 12px; height: 12px;
+    border-radius: 3px;
+    border: 1.5px solid;
+    flex-shrink: 0;
+  }
+
+  /* ── Tree Canvas ── */
+  .tree-wrapper {
+    background: var(--bg-deep);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    position: relative;
+    min-height: 300px;
+  }
+  .tree-wrapper svg {
+    display: block;
+  }
+
+  /* ── Step Info Panel ── */
+  .step-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 20px;
+    margin-top: 16px;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .step-panel .step-icon {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .step-panel .step-text {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-body);
+  }
+  .step-panel .step-text code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    background: var(--bg-code);
+    padding: 1px 6px;
+    border-radius: 4px;
+    color: #e5a07b;
+  }
+  .step-panel .step-text .highlight-open { color: var(--node-open-text); font-weight: 600; }
+  .step-panel .step-text .highlight-close { color: var(--node-close-text); font-weight: 600; }
+  .step-panel .step-text .highlight-result { color: var(--node-result-text); font-weight: 600; }
+
+  /* ── Results Panel ── */
+  .results-bar {
+    margin-top: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .results-bar .label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+  .result-chip {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    padding: 4px 12px;
+    border-radius: 16px;
+    transition: all 0.3s;
+  }
+  .result-chip.found {
+    background: var(--node-result-bg);
+    border: 1px solid var(--node-result-border);
+    color: var(--node-result-text);
+  }
+  .result-chip.pending {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+  }
+
+  /* ── Code Reference ── */
+  .code-ref {
+    margin-top: 28px;
+  }
+  .code-block {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .code-header {
+    background: var(--bg-card);
+    padding: 8px 16px;
+    font-size: 12px;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .code-block pre {
+    padding: 16px 20px;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text-body);
+  }
+  .kw { color: #c678dd; }
+  .type { color: #e5c07b; }
+  .fn { color: #61afef; }
+  .str { color: #98c379; }
+  .num { color: #d19a66; }
+  .cmt { color: #5c6370; font-style: italic; }
+  .op { color: #56b6c2; }
+  .param { color: #e06c75; }
+
+  /* ── Highlight current line ── */
+  .code-line {
+    display: block;
+    padding: 0 0;
+    margin: 0 -20px;
+    padding: 0 20px;
+    transition: background 0.3s;
+  }
+  .code-line.active {
+    background: rgba(59, 130, 246, 0.1);
+    border-left: 2px solid var(--accent-blue);
+    padding-left: 18px;
+  }
+
+  /* ── Call Stack ── */
+  .panels-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 16px;
+  }
+  .panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+  }
+  .panel h4 {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 10px;
+  }
+  .stack-frame {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    padding: 5px 10px;
+    border-radius: 5px;
+    margin-bottom: 4px;
+    border-left: 3px solid;
+    transition: all 0.2s;
+  }
+  .stack-frame.open-frame {
+    background: rgba(16, 185, 129, 0.08);
+    border-color: var(--node-open-border);
+    color: var(--node-open-text);
+  }
+  .stack-frame.close-frame {
+    background: rgba(59, 130, 246, 0.08);
+    border-color: var(--node-close-border);
+    color: var(--node-close-text);
+  }
+  .stack-frame.root-frame {
+    background: rgba(255,255,255,0.04);
+    border-color: var(--text-dim);
+    color: var(--text-body);
+  }
+  .stack-frame.result-frame {
+    background: rgba(34, 197, 94, 0.08);
+    border-color: var(--node-result-border);
+    color: var(--node-result-text);
+  }
+
+  .decision-text {
+    font-size: 13px;
+    line-height: 1.8;
+    color: var(--text-body);
+  }
+  .decision-text .check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 3px 0;
+  }
+  .decision-text .check .icon {
+    font-size: 14px;
+    width: 18px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .check.yes .icon { color: var(--accent-green); }
+  .check.no .icon { color: var(--accent-red); }
+  .check.yes { color: var(--text-body); }
+  .check.no { color: var(--text-dim); text-decoration: line-through; }
+
+  /* ── Keyboard hint ── */
+  .kbd-hint {
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 12px;
+  }
+  .kbd-hint kbd {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════ HEADER ═══════════ -->
+<div class="page-header">
+  <h1>Recursion Tree Visualizer</h1>
+  <div class="subtitle">LeetCode 22 · Generate Parentheses · Backtracking DFS</div>
+  <div class="tags">
+    <span>Step-by-step</span>
+    <span class="sep">·</span>
+    <span>Interactive</span>
+    <span class="sep">·</span>
+    <span>C++</span>
+  </div>
+  <div class="divider"></div>
+</div>
+
+<div class="main-content">
+
+  <!-- ═══════════ ALGORITHM OVERVIEW ═══════════ -->
+  <div class="section-title"><span>Algorithm Overview</span></div>
+
+  <div class="info-grid">
+    <div class="info-card">
+      <h3>Core Rules</h3>
+      <p>
+        At each step we have two choices:<br>
+        1. Add <code>'('</code> if <code>open &lt; n</code><br>
+        2. Add <code>')'</code> if <code>close &lt; open</code><br>
+        When <code>open == n &amp;&amp; close == n</code>, we found a valid result.
+      </p>
+    </div>
+    <div class="info-card">
+      <h3>Why Backtracking?</h3>
+      <p>
+        We build the string one character at a time. By checking the constraints <strong>before</strong> branching, we prune all invalid prefixes early — no wasted work. Every leaf in the tree is a valid answer.
+      </p>
+    </div>
+  </div>
+
+  <!-- ═══════════ CONTROLS ═══════════ -->
+  <div class="section-title"><span>Recursion Tree</span></div>
+
+  <div class="controls-bar">
+    <div class="control-group">
+      <label>n =</label>
+      <select id="nSelect">
+        <option value="1">1</option>
+        <option value="2" selected>2</option>
+        <option value="3">3</option>
+      </select>
+    </div>
+    <div class="btn-group">
+      <button class="btn" id="btnReset" onclick="resetTree()">⟲ Reset</button>
+      <button class="btn" id="btnPrev" onclick="stepPrev()">← Prev</button>
+      <button class="btn primary" id="btnNext" onclick="stepNext()">Next →</button>
+      <button class="btn" id="btnAll" onclick="showAllNodes()">Show All</button>
+      <button class="btn" id="btnPlay" onclick="toggleAutoplay()">▶ Play</button>
+    </div>
+    <div class="speed-control">
+      <span>Speed</span>
+      <input type="range" id="speedSlider" min="1" max="10" value="5">
+    </div>
+    <span class="step-counter" id="stepCounter">Step 0 / 0</span>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-dot" style="background:var(--node-open-bg);border-color:var(--node-open-border);"></div>
+      <span>Add ( (open &lt; n)</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:var(--node-close-bg);border-color:var(--node-close-border);"></div>
+      <span>Add ) (close &lt; open)</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:var(--node-result-bg);border-color:var(--node-result-border);"></div>
+      <span>Valid result ✓</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:var(--node-unvisited-bg);border-color:var(--node-unvisited-border);"></div>
+      <span>Not yet visited</span>
+    </div>
+  </div>
+
+  <!-- ═══════════ TREE ═══════════ -->
+  <div class="tree-wrapper" id="treeWrapper"></div>
+
+  <!-- ═══════════ STEP INFO ═══════════ -->
+  <div class="step-panel" id="stepPanel">
+    <div class="step-icon" id="stepIcon" style="background:var(--bg-code);color:var(--text-dim);">?</div>
+    <div class="step-text" id="stepText">Press <strong>Next →</strong> or <kbd>→</kbd> to start stepping through the recursion.</div>
+  </div>
+
+  <!-- ═══════════ RESULTS ═══════════ -->
+  <div class="results-bar" id="resultsBar">
+    <span class="label">Results found:</span>
+  </div>
+
+  <div class="kbd-hint">
+    Keyboard: <kbd>←</kbd> prev · <kbd>→</kbd> next · <kbd>Space</kbd> play/pause · <kbd>R</kbd> reset
+  </div>
+
+  <!-- ═══════════ CALL STACK + DECISION ═══════════ -->
+  <div class="panels-grid">
+    <div class="panel">
+      <h4>Call Stack</h4>
+      <div id="callStack">
+        <div style="font-size:13px;color:var(--text-dim);">Empty — start stepping to see the call stack.</div>
+      </div>
+    </div>
+    <div class="panel">
+      <h4>Decision at Current Node</h4>
+      <div class="decision-text" id="decisionPanel">
+        <div style="color:var(--text-dim);">Step forward to see branching decisions.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ CODE REFERENCE ═══════════ -->
+  <div class="code-ref">
+    <div class="section-title"><span>Code Reference</span></div>
+    <div class="code-block">
+      <div class="code-header">C++ · Backtracking DFS</div>
+<pre><span class="code-line" data-line="0"><span class="kw">class</span> <span class="type">Solution</span> {</span>
+<span class="code-line" data-line="1"><span class="kw">public</span>:</span>
+<span class="code-line" data-line="2">    <span class="type">vector</span>&lt;<span class="type">string</span>&gt; <span class="fn">generateParenthesis</span>(<span class="kw">int</span> <span class="param">n</span>) {</span>
+<span class="code-line" data-line="3">        <span class="type">vector</span>&lt;<span class="type">string</span>&gt; ans;</span>
+<span class="code-line" data-line="4">        <span class="fn">dfs</span>(ans, <span class="str">""</span>, <span class="num">0</span>, <span class="num">0</span>, n);</span>
+<span class="code-line" data-line="5">        <span class="kw">return</span> ans;</span>
+<span class="code-line" data-line="6">    }</span>
+<span class="code-line" data-line="7"></span>
+<span class="code-line" data-line="8">    <span class="kw">void</span> <span class="fn">dfs</span>(<span class="type">vector</span>&lt;<span class="type">string</span>&gt;&amp; <span class="param">ans</span>, <span class="type">string</span> <span class="param">path</span>,</span>
+<span class="code-line" data-line="9">            <span class="kw">int</span> <span class="param">open</span>, <span class="kw">int</span> <span class="param">close</span>, <span class="kw">int</span> <span class="param">n</span>) {</span>
+<span class="code-line" data-line="10">        <span class="cmt">// Base case: found a valid combination</span></span>
+<span class="code-line" data-line="11">        <span class="kw">if</span> (open == n &amp;&amp; close == n) {</span>
+<span class="code-line" data-line="12">            ans.<span class="fn">push_back</span>(path);</span>
+<span class="code-line" data-line="13">            <span class="kw">return</span>;</span>
+<span class="code-line" data-line="14">        }</span>
+<span class="code-line" data-line="15"></span>
+<span class="code-line" data-line="16">        <span class="cmt">// Branch 1: add '('</span></span>
+<span class="code-line" data-line="17">        <span class="kw">if</span> (open &lt; n) {</span>
+<span class="code-line" data-line="18">            <span class="fn">dfs</span>(ans, path + <span class="str">'('</span>, open + <span class="num">1</span>, close, n);</span>
+<span class="code-line" data-line="19">        }</span>
+<span class="code-line" data-line="20"></span>
+<span class="code-line" data-line="21">        <span class="cmt">// Branch 2: add ')'</span></span>
+<span class="code-line" data-line="22">        <span class="kw">if</span> (close &lt; open) {</span>
+<span class="code-line" data-line="23">            <span class="fn">dfs</span>(ans, path + <span class="str">')'</span>, open, close + <span class="num">1</span>, n);</span>
+<span class="code-line" data-line="24">        }</span>
+<span class="code-line" data-line="25">    }</span>
+<span class="code-line" data-line="26">};</span></pre>
+    </div>
+  </div>
+
+</div><!-- .main-content -->
+
+<script>
+// ═══════════ TREE DATA ═══════════
+function buildTree(n) {
+  const nodes = [];
+  let id = 0;
+
+  function dfs(path, open, close, parentId) {
+    const nid = id++;
+    const isResult = open === n && close === n;
+    let action = 'root';
+    if (parentId !== null) {
+      action = path[path.length - 1] === '(' ? 'open' : 'close';
+    }
+    nodes.push({
+      id: nid, path, open, close,
+      parent: parentId,
+      children: [],
+      isResult,
+      action,
+      depth: path.length
+    });
+    if (parentId !== null) nodes[parentId].children.push(nid);
+    if (isResult) return;
+    if (open < n) dfs(path + '(', open + 1, close, nid);
+    if (close < open) dfs(path + ')', open, close + 1, nid);
+  }
+
+  dfs('', 0, 0, null);
+  return nodes;
+}
+
+// ═══════════ LAYOUT ═══════════
+function layoutTree(nodes) {
+  const NODE_H = 32;
+  const V_GAP = 50;
+  const H_GAP = 10;
+  let leafX = 0;
+
+  function getNodeW(nd) {
+    const label = nd.path === '' ? '""' : '"' + nd.path + '"';
+    return Math.max(48, label.length * 8.5 + 20);
+  }
+
+  function measure(nid) {
+    const nd = nodes[nid];
+    const w = getNodeW(nd);
+    if (nd.children.length === 0) {
+      nd.lx = leafX;
+      nd.rx = leafX + w;
+      leafX += w + H_GAP;
+      nd.cx = nd.lx + w / 2;
+    } else {
+      for (const c of nd.children) measure(c);
+      const first = nodes[nd.children[0]];
+      const last = nodes[nd.children[nd.children.length - 1]];
+      nd.lx = first.lx;
+      nd.rx = last.rx;
+      nd.cx = (first.cx + last.cx) / 2;
+    }
+    nd.w = w;
+    nd.cy = nd.depth * (NODE_H + V_GAP) + NODE_H / 2 + 30;
+  }
+
+  leafX = 30;
+  measure(0);
+  const totalW = Math.max(...nodes.map(n => n.rx)) + 30;
+  const totalH = Math.max(...nodes.map(n => n.cy)) + NODE_H / 2 + 40;
+  return { totalW, totalH, NODE_H };
+}
+
+// ═══════════ RENDER ═══════════
+let currentN = 2;
+let nodes = [];
+let layout = null;
+let visibleCount = 0;
+let autoplayTimer = null;
+let allResults = [];
+
+function getNodeStyle(nd, idx) {
+  if (idx >= visibleCount) {
+    return { bg: 'var(--node-unvisited-bg)', border: 'var(--node-unvisited-border)', text: 'var(--node-unvisited-text)' };
+  }
+  if (nd.isResult) {
+    return { bg: 'var(--node-result-bg)', border: 'var(--node-result-border)', text: 'var(--node-result-text)' };
+  }
+  if (nd.action === 'root') {
+    return { bg: '#1c1e26', border: '#6b7280', text: 'var(--text-primary)' };
+  }
+  if (nd.action === 'open') {
+    return { bg: 'var(--node-open-bg)', border: 'var(--node-open-border)', text: 'var(--node-open-text)' };
+  }
+  return { bg: 'var(--node-close-bg)', border: 'var(--node-close-border)', text: 'var(--node-close-text)' };
+}
+
+function renderTree() {
+  const L = layout;
+  const svg = [];
+  svg.push(`<svg width="${L.totalW}" height="${L.totalH}" viewBox="0 0 ${L.totalW} ${L.totalH}" xmlns="http://www.w3.org/2000/svg">`);
+
+  // Edges
+  for (let i = 0; i < nodes.length; i++) {
+    const nd = nodes[i];
+    if (nd.parent === null) continue;
+    const p = nodes[nd.parent];
+    const vis = i < visibleCount && nd.parent < visibleCount;
+    const isCurrent = i === visibleCount - 1;
+    const color = vis ? (isCurrent ? (nd.action === 'open' ? '#10b981' : '#3b82f6') : 'rgba(100,106,120,0.3)') : 'rgba(50,53,63,0.15)';
+    const sw = isCurrent ? 2 : 1.2;
+    // Curved connector
+    const x1 = p.cx, y1 = p.cy + L.NODE_H / 2;
+    const x2 = nd.cx, y2 = nd.cy - L.NODE_H / 2;
+    const my = (y1 + y2) / 2;
+    svg.push(`<path d="M${x1} ${y1} C${x1} ${my}, ${x2} ${my}, ${x2} ${y2}" fill="none" stroke="${color}" stroke-width="${sw}"/>`);
+
+    // Edge label — the character added
+    if (vis) {
+      const mx = (x1 + x2) / 2 + (x2 > x1 ? -2 : 2);
+      const emy = (y1 + y2) / 2 - 4;
+      const ch = nd.action === 'open' ? '(' : ')';
+      const tc = nd.action === 'open' ? '#34d399' : '#60a5fa';
+      svg.push(`<text x="${mx}" y="${emy}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600" fill="${tc}" opacity="0.7">${ch}</text>`);
+    }
+  }
+
+  // Nodes
+  for (let i = 0; i < nodes.length; i++) {
+    const nd = nodes[i];
+    const st = getNodeStyle(nd, i);
+    const isCurrent = i === visibleCount - 1;
+    const label = nd.path === '' ? '&quot;&quot;' : '&quot;' + nd.path + '&quot;';
+    const x = nd.cx - nd.w / 2;
+    const y = nd.cy - L.NODE_H / 2;
+    const sw = isCurrent ? 2.5 : 1;
+    const rx = nd.isResult ? L.NODE_H / 2 : 6;
+
+    // Glow for current node
+    if (isCurrent && i < visibleCount) {
+      const gc = nd.isResult ? '#22c55e' : nd.action === 'open' ? '#10b981' : nd.action === 'close' ? '#3b82f6' : '#6b7280';
+      svg.push(`<rect x="${x - 3}" y="${y - 3}" width="${nd.w + 6}" height="${L.NODE_H + 6}" rx="${rx + 2}" fill="none" stroke="${gc}" stroke-width="1" opacity="0.3"/>`);
+    }
+
+    svg.push(`<rect x="${x}" y="${y}" width="${nd.w}" height="${L.NODE_H}" rx="${rx}" fill="${st.bg}" stroke="${st.border}" stroke-width="${sw}"/>`);
+    svg.push(`<text x="${nd.cx}" y="${nd.cy}" text-anchor="middle" dominant-baseline="central" font-family="JetBrains Mono, monospace" font-size="12" font-weight="500" fill="${st.text}">${label}</text>`);
+
+    // (open, close) label above node
+    if (i < visibleCount) {
+      svg.push(`<text x="${nd.cx}" y="${y - 7}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9.5" fill="rgba(156,163,175,0.6)">${nd.open},${nd.close}</text>`);
+    }
+
+    // ✓ mark under result
+    if (nd.isResult && i < visibleCount) {
+      svg.push(`<text x="${nd.cx}" y="${nd.cy + L.NODE_H / 2 + 14}" text-anchor="middle" font-family="DM Sans, sans-serif" font-size="11" font-weight="600" fill="#4ade80">✓ push</text>`);
+    }
+  }
+
+  svg.push('</svg>');
+  document.getElementById('treeWrapper').innerHTML = svg.join('');
+}
+
+// ═══════════ STEP INFO ═══════════
+function updateInfo() {
+  const counter = document.getElementById('stepCounter');
+  const icon = document.getElementById('stepIcon');
+  const text = document.getElementById('stepText');
+  counter.textContent = `Step ${visibleCount} / ${nodes.length}`;
+
+  if (visibleCount === 0) {
+    icon.style.background = 'var(--bg-code)';
+    icon.style.color = 'var(--text-dim)';
+    icon.textContent = '?';
+    text.innerHTML = 'Press <strong>Next →</strong> or <kbd>→</kbd> to start stepping through the recursion.';
+    updateCallStack();
+    updateDecision();
+    updateResults();
+    updateCodeHighlight(-1);
+    return;
+  }
+
+  const nd = nodes[visibleCount - 1];
+
+  if (nd.action === 'root') {
+    icon.style.background = '#1c1e26'; icon.style.color = 'var(--text-primary)'; icon.textContent = '▶';
+    text.innerHTML = `Start recursion: <code>dfs("", open=0, close=0)</code>`;
+    updateCodeHighlight(4);
+  } else if (nd.isResult) {
+    icon.style.background = 'var(--node-result-bg)'; icon.style.color = 'var(--node-result-text)'; icon.textContent = '✓';
+    text.innerHTML = `<span class="highlight-result">Found valid result!</span> <code>"${nd.path}"</code> — open==${currentN} && close==${currentN}, push to <code>ans</code>.`;
+    updateCodeHighlight(12);
+  } else if (nd.action === 'open') {
+    icon.style.background = 'var(--node-open-bg)'; icon.style.color = 'var(--node-open-text)'; icon.textContent = '(';
+    text.innerHTML = `<span class="highlight-open">Add '('</span> → <code>dfs("${nd.path}", open=${nd.open}, close=${nd.close})</code> — open(${nd.open}) &lt; n(${currentN}), so we can add an opening paren.`;
+    updateCodeHighlight(18);
+  } else {
+    icon.style.background = 'var(--node-close-bg)'; icon.style.color = 'var(--node-close-text)'; icon.textContent = ')';
+    text.innerHTML = `<span class="highlight-close">Add ')'</span> → <code>dfs("${nd.path}", open=${nd.open}, close=${nd.close})</code> — close(${nd.close}) &lt; open(${nd.open}), so we can close.`;
+    updateCodeHighlight(23);
+  }
+
+  updateCallStack();
+  updateDecision();
+  updateResults();
+}
+
+// ═══════════ CALL STACK ═══════════
+function updateCallStack() {
+  const el = document.getElementById('callStack');
+  if (visibleCount === 0) {
+    el.innerHTML = '<div style="font-size:13px;color:var(--text-dim);">Empty — start stepping to see the call stack.</div>';
+    return;
+  }
+
+  // Trace path from root to current node
+  const nd = nodes[visibleCount - 1];
+  const path = [];
+  let cur = nd;
+  while (cur) {
+    path.unshift(cur);
+    cur = cur.parent !== null ? nodes[cur.parent] : null;
+  }
+
+  let html = '';
+  for (let i = path.length - 1; i >= 0; i--) {
+    const p = path[i];
+    let cls = 'root-frame';
+    if (p.isResult) cls = 'result-frame';
+    else if (p.action === 'open') cls = 'open-frame';
+    else if (p.action === 'close') cls = 'close-frame';
+    const arrow = i === path.length - 1 ? ' ◄' : '';
+    html += `<div class="stack-frame ${cls}">dfs("${p.path}", ${p.open}, ${p.close})${arrow}</div>`;
+  }
+  el.innerHTML = html;
+}
+
+// ═══════════ DECISION PANEL ═══════════
+function updateDecision() {
+  const el = document.getElementById('decisionPanel');
+  if (visibleCount === 0) {
+    el.innerHTML = '<div style="color:var(--text-dim);">Step forward to see branching decisions.</div>';
+    return;
+  }
+
+  const nd = nodes[visibleCount - 1];
+  if (nd.isResult) {
+    el.innerHTML = `
+      <div class="check yes"><span class="icon">✓</span> open(${nd.open}) == n(${currentN}) && close(${nd.close}) == n(${currentN})</div>
+      <div style="margin-top:4px;color:var(--node-result-text);font-weight:600;">→ Base case reached! Push "${nd.path}" to results.</div>
+    `;
+    return;
+  }
+
+  const canOpen = nd.open < currentN;
+  const canClose = nd.close < nd.open;
+
+  el.innerHTML = `
+    <div class="check ${canOpen ? 'yes' : 'no'}">
+      <span class="icon">${canOpen ? '✓' : '✗'}</span>
+      <span>open(${nd.open}) < n(${currentN}) → ${canOpen ? 'can add (' : 'cannot add ('}</span>
+    </div>
+    <div class="check ${canClose ? 'yes' : 'no'}">
+      <span class="icon">${canClose ? '✓' : '✗'}</span>
+      <span>close(${nd.close}) < open(${nd.open}) → ${canClose ? 'can add )' : 'cannot add )'}</span>
+    </div>
+    ${!canOpen && !canClose && !nd.isResult ? '<div style="margin-top:4px;color:var(--accent-red);">Dead end — backtrack!</div>' : ''}
+  `;
+}
+
+// ═══════════ RESULTS BAR ═══════════
+function updateResults() {
+  const bar = document.getElementById('resultsBar');
+  let html = '<span class="label">Results found:</span>';
+  const found = [];
+  for (let i = 0; i < visibleCount; i++) {
+    if (nodes[i].isResult) found.push(nodes[i].path);
+  }
+  if (allResults.length === 0) {
+    html += '<span style="font-size:13px;color:var(--text-dim);">—</span>';
+  } else {
+    for (const r of allResults) {
+      const isFound = found.includes(r);
+      html += `<span class="result-chip ${isFound ? 'found' : 'pending'}">"${r}"</span>`;
+    }
+  }
+  bar.innerHTML = html;
+}
+
+// ═══════════ CODE HIGHLIGHT ═══════════
+function updateCodeHighlight(line) {
+  document.querySelectorAll('.code-line').forEach(el => el.classList.remove('active'));
+  if (line >= 0) {
+    const el = document.querySelector(`.code-line[data-line="${line}"]`);
+    if (el) el.classList.add('active');
+  }
+}
+
+// ═══════════ CONTROLS ═══════════
+function stepNext() {
+  if (visibleCount < nodes.length) { visibleCount++; renderTree(); updateInfo(); }
+}
+function stepPrev() {
+  if (visibleCount > 0) { visibleCount--; renderTree(); updateInfo(); }
+}
+function showAllNodes() {
+  visibleCount = nodes.length;
+  renderTree();
+  updateInfo();
+}
+function resetTree() {
+  stopAutoplay();
+  visibleCount = 0;
+  renderTree();
+  updateInfo();
+}
+
+let isPlaying = false;
+function toggleAutoplay() {
+  if (isPlaying) { stopAutoplay(); }
+  else { startAutoplay(); }
+}
+function startAutoplay() {
+  isPlaying = true;
+  document.getElementById('btnPlay').textContent = '⏸ Pause';
+  document.getElementById('btnPlay').classList.add('primary');
+  autoStep();
+}
+function stopAutoplay() {
+  isPlaying = false;
+  document.getElementById('btnPlay').textContent = '▶ Play';
+  document.getElementById('btnPlay').classList.remove('primary');
+  if (autoplayTimer) { clearTimeout(autoplayTimer); autoplayTimer = null; }
+}
+function autoStep() {
+  if (!isPlaying) return;
+  if (visibleCount >= nodes.length) { stopAutoplay(); return; }
+  stepNext();
+  const speed = document.getElementById('speedSlider').value;
+  const delay = 1200 - speed * 100;
+  autoplayTimer = setTimeout(autoStep, delay);
+}
+
+// ═══════════ INIT ═══════════
+function initTree(n) {
+  stopAutoplay();
+  currentN = n;
+  nodes = buildTree(n);
+  layout = layoutTree(nodes);
+  visibleCount = 0;
+  allResults = nodes.filter(nd => nd.isResult).map(nd => nd.path);
+  renderTree();
+  updateInfo();
+}
+
+document.getElementById('nSelect').addEventListener('change', function() {
+  initTree(+this.value);
+});
+
+// Keyboard
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'ArrowRight') { e.preventDefault(); stepNext(); }
+  else if (e.key === 'ArrowLeft') { e.preventDefault(); stepPrev(); }
+  else if (e.key === ' ') { e.preventDefault(); toggleAutoplay(); }
+  else if (e.key === 'r' || e.key === 'R') { resetTree(); }
+});
+
+initTree(2);
+</script>
+
+</body>
+</html>
