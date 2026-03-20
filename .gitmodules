@@ -1,0 +1,6 @@
+[submodule "Generate-Parentheses-"]
+	path = Generate-Parentheses-
+	url = https://github.com/foodieteng/Generate-Parentheses-.git
+[submodule "segmentTree"]
+	path = segmentTree
+	url = https://github.com/foodieteng/segmentTree.git
