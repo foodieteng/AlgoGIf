@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Lazy Propagation 動畫教學</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0c0e14; }
+  button:disabled { opacity: 0.4; cursor: not-allowed !important; }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: #161825; }
+  ::-webkit-scrollbar-thumb { background: #2a2d40; border-radius: 3px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useCallback, useRef } = React;
+
+const INIT = [3, 1, 4, 1, 5, 9, 2, 6];
+const N = INIT.length;
+
+function createTree(arr) {
+  const n = arr.length;
+  const nodes = {};
+  function build(L, R, id) {
+    nodes[id] = { sum: 0, add: 0, set: -1, L, R };
+    if (L === R) { nodes[id].sum = arr[L - 1]; return; }
+    const M = (L + R) >> 1;
+    build(L, M, 2 * id);
+    build(M + 1, R, 2 * id + 1);
+    nodes[id].sum = nodes[2 * id].sum + nodes[2 * id + 1].sum;
+  }
+  build(1, n, 1);
+  return nodes;
+}
+
+function cloneTree(nodes) {
+  const c = {};
+  for (const k in nodes) c[k] = { ...nodes[k] };
+  return c;
+}
+
+const SCENARIOS = [
+  {
+    title: "範例一：區間加值 [2,5] +3",
+    desc: "對 a[2]~a[5] 每個元素加 3，觀察懶標記如何「暫存」而不往下傳",
+    ops: [{ type: "add", l: 2, r: 5, val: 3 }],
+  },
+  {
+    title: "範例二：加值後查詢 [3,4]",
+    desc: "先加值 [2,5]+3，再查詢 [3,4]。查詢時必須 push 下推標記，才能拿到正確答案",
+    ops: [{ type: "add", l: 2, r: 5, val: 3 }, { type: "query", l: 3, r: 4 }],
+  },
+  {
+    title: "範例三：加值 → 賦值 → 查詢",
+    desc: "先 [2,5]+3，再 set [3,6]=10，最後查詢 [1,8]。觀察 set 如何覆蓋舊的 add",
+    ops: [
+      { type: "add", l: 2, r: 5, val: 3 },
+      { type: "set", l: 3, r: 6, val: 10 },
+      { type: "query", l: 1, r: 8 },
+    ],
+  },
+];
+
+function simulate(scenario) {
+  let tree = createTree(INIT);
+  const allSteps = [];
+
+  for (const op of scenario.ops) {
+    const opLabel = op.type === "add" ? `區間加值 [${op.l},${op.r}] +${op.val}` :
+                    op.type === "set" ? `區間賦值 [${op.l},${op.r}] = ${op.val}` :
+                    `查詢區間和 [${op.l},${op.r}]`;
+    allSteps.push({ tree: cloneTree(tree), highlight: null, action: "op_start", desc: `開始操作：${opLabel}`, activeNodes: new Set() });
+
+    const steps = [];
+
+    function applySet(id, len, val, t) {
+      t[id].sum = val * len;
+      t[id].set = val;
+      t[id].add = 0;
+    }
+    function applyAdd(id, len, val, t) {
+      t[id].sum += val * len;
+      t[id].add += val;
+    }
+    function push(id, t) {
+      const L = t[id].L, R = t[id].R, M = (L + R) >> 1;
+      const lc = 2 * id, rc = 2 * id + 1;
+      if (t[id].set !== -1) {
+        applySet(lc, M - L + 1, t[id].set, t);
+        applySet(rc, R - M, t[id].set, t);
+        t[id].set = -1;
+      }
+      if (t[id].add !== 0) {
+        applyAdd(lc, M - L + 1, t[id].add, t);
+        applyAdd(rc, R - M, t[id].add, t);
+        t[id].add = 0;
+      }
+    }
+
+    function modifyAdd(l, r, v, id, visited) {
+      const nd = tree[id];
+      visited.add(id);
+      if (l <= nd.L && nd.R <= r) {
+        steps.push({ tree: cloneTree(tree), highlight: id, action: "tag_add",
+          desc: `節點 [${nd.L},${nd.R}]：完全包含在 [${l},${r}]，打 add 標記 +${v}（sum: ${nd.sum} → ${nd.sum + v * (nd.R - nd.L + 1)}）`,
+          activeNodes: new Set(visited) });
+        applyAdd(id, nd.R - nd.L + 1, v, tree);
+        steps.push({ tree: cloneTree(tree), highlight: id, action: "tag_done", desc: `節點 [${nd.L},${nd.R}]：標記完成 ✓ add=${tree[id].add}, sum=${tree[id].sum}`, activeNodes: new Set(visited) });
+        return;
+      }
+      steps.push({ tree: cloneTree(tree), highlight: id, action: "push",
+        desc: `節點 [${nd.L},${nd.R}]：部分重疊，需要先 push 下推標記再遞迴${(nd.set !== -1 || nd.add !== 0) ? `（有標記：${nd.set !== -1 ? 'set=' + nd.set + ' ' : ''}${nd.add !== 0 ? 'add=' + nd.add : ''}）` : '（無標記，跳過 push）'}`,
+        activeNodes: new Set(visited) });
+      if (nd.set !== -1 || nd.add !== 0) {
+        push(id, tree);
+        steps.push({ tree: cloneTree(tree), highlight: id, action: "push_done", desc: `節點 [${nd.L},${nd.R}]：push 完成，標記已傳給子節點`, activeNodes: new Set(visited) });
+      }
+      const M = (nd.L + nd.R) >> 1;
+      if (l <= M) modifyAdd(l, r, v, 2 * id, visited);
+      if (r > M) modifyAdd(l, r, v, 2 * id + 1, visited);
+      tree[id].sum = tree[2 * id].sum + tree[2 * id + 1].sum;
+      steps.push({ tree: cloneTree(tree), highlight: id, action: "pull", desc: `節點 [${nd.L},${nd.R}]：pull 更新 sum = ${tree[2 * id].sum} + ${tree[2 * id + 1].sum} = ${tree[id].sum}`, activeNodes: new Set(visited) });
+    }
+
+    function modifySet(l, r, v, id, visited) {
+      const nd = tree[id];
+      visited.add(id);
+      if (l <= nd.L && nd.R <= r) {
+        steps.push({ tree: cloneTree(tree), highlight: id, action: "tag_set",
+          desc: `節點 [${nd.L},${nd.R}]：完全包含，打 set 標記 =${v}（清掉舊 add，sum → ${v * (nd.R - nd.L + 1)}）`,
+          activeNodes: new Set(visited) });
+        applySet(id, nd.R - nd.L + 1, v, tree);
+        steps.push({ tree: cloneTree(tree), highlight: id, action: "tag_done", desc: `節點 [${nd.L},${nd.R}]：標記完成 ✓ set=${tree[id].set}, add=0, sum=${tree[id].sum}`, activeNodes: new Set(visited) });
+        return;
+      }
+      steps.push({ tree: cloneTree(tree), highlight: id, action: "push",
+        desc: `節點 [${nd.L},${nd.R}]：部分重疊，需先 push${(nd.set !== -1 || nd.add !== 0) ? `（下推 ${nd.set !== -1 ? 'set=' + nd.set + ' ' : ''}${nd.add !== 0 ? 'add=' + nd.add : ''}）` : '（無標記）'}`,
+        activeNodes: new Set(visited) });
+      if (nd.set !== -1 || nd.add !== 0) {
+        push(id, tree);
+        steps.push({ tree: cloneTree(tree), highlight: id, action: "push_done", desc: `節點 [${nd.L},${nd.R}]：push 完成`, activeNodes: new Set(visited) });
+      }
+      const M = (nd.L + nd.R) >> 1;
+      if (l <= M) modifySet(l, r, v, 2 * id, visited);
+      if (r > M) modifySet(l, r, v, 2 * id + 1, visited);
+      tree[id].sum = tree[2 * id].sum + tree[2 * id + 1].sum;
+      steps.push({ tree: cloneTree(tree), highlight: id, action: "pull", desc: `節點 [${nd.L},${nd.R}]：pull 更新 sum = ${tree[id].sum}`, activeNodes: new Set(visited) });
+    }
+
+    function querySum(l, r, id, visited) {
+      const nd = tree[id];
+      visited.add(id);
+      if (l <= nd.L && nd.R <= r) {
+        steps.push({ tree: cloneTree(tree), highlight: id, action: "query_hit",
+          desc: `節點 [${nd.L},${nd.R}]：完全包含，回傳 sum = ${nd.sum}`,
+          activeNodes: new Set(visited) });
+        return nd.sum;
+      }
+      steps.push({ tree: cloneTree(tree), highlight: id, action: "push",
+        desc: `節點 [${nd.L},${nd.R}]：查詢需進入子樹，先 push${(nd.set !== -1 || nd.add !== 0) ? `（下推 ${nd.set !== -1 ? 'set=' + nd.set + ' ' : ''}${nd.add !== 0 ? 'add=' + nd.add : ''}）` : '（無標記）'}`,
+        activeNodes: new Set(visited) });
+      if (nd.set !== -1 || nd.add !== 0) {
+        push(id, tree);
+        steps.push({ tree: cloneTree(tree), highlight: id, action: "push_done", desc: `節點 [${nd.L},${nd.R}]：push 完成，標記已傳給子節點`, activeNodes: new Set(visited) });
+      }
+      const M = (nd.L + nd.R) >> 1;
+      let res = 0;
+      if (l <= M) res += querySum(l, r, 2 * id, visited);
+      if (r > M) res += querySum(l, r, 2 * id + 1, visited);
+      steps.push({ tree: cloneTree(tree), highlight: id, action: "query_merge",
+        desc: `節點 [${nd.L},${nd.R}]：子樹結果合併，區間和 = ${res}`,
+        activeNodes: new Set(visited) });
+      return res;
+    }
+
+    if (op.type === "add") modifyAdd(op.l, op.r, op.val, 1, new Set());
+    else if (op.type === "set") modifySet(op.l, op.r, op.val, 1, new Set());
+    else querySum(op.l, op.r, 1, new Set());
+
+    allSteps.push(...steps);
+    allSteps.push({ tree: cloneTree(tree), highlight: null, action: "op_end", desc: `操作完成：${opLabel}`, activeNodes: new Set() });
+  }
+  return allSteps;
+}
+
+function getPositions() {
+  const pos = {};
+  function calc(L, R, id, x, y, spread) {
+    pos[id] = { x, y, L, R };
+    if (L === R) return;
+    const M = (L + R) >> 1;
+    calc(L, M, 2 * id, x - spread, y + 90, spread * 0.5);
+    calc(M + 1, R, 2 * id + 1, x + spread, y + 90, spread * 0.5);
+  }
+  calc(1, N, 1, 400, 50, 175);
+  return pos;
+}
+const POS = getPositions();
+
+function getEdges() {
+  const edges = [];
+  function addE(L, R, id) {
+    if (L === R) return;
+    const M = (L + R) >> 1;
+    edges.push({ from: id, to: 2 * id });
+    edges.push({ from: id, to: 2 * id + 1 });
+    addE(L, M, 2 * id);
+    addE(M + 1, R, 2 * id + 1);
+  }
+  addE(1, N, 1);
+  return edges;
+}
+const EDGES = getEdges();
+
+const COLORS = {
+  bg: "#0c0e14", card: "#161825", border: "#2a2d40", text: "#d4d8e8", dim: "#5a5f7a",
+  green: "#22c55e", yellow: "#eab308", purple: "#a855f7", blue: "#3b82f6",
+  red: "#ef4444", orange: "#f97316", cyan: "#06b6d4", pink: "#ec4899",
+};
+
+const ACTION_COLORS = {
+  tag_add: COLORS.green, tag_set: COLORS.orange, tag_done: COLORS.green,
+  push: COLORS.yellow, push_done: COLORS.yellow,
+  pull: COLORS.blue, query_hit: COLORS.cyan, query_merge: COLORS.blue,
+  op_start: COLORS.purple, op_end: COLORS.purple,
+};
+
+const ACTION_LABELS = {
+  tag_add: "打 ADD 標記", tag_set: "打 SET 標記", tag_done: "標記完成 ✓",
+  push: "PUSH 下推", push_done: "下推完成 ✓",
+  pull: "PULL 上拉", query_hit: "查詢命中", query_merge: "查詢合併",
+  op_start: "操作開始", op_end: "操作完成",
+};
+
+const selS = { marginLeft: 4, padding: "3px 6px", borderRadius: 5, border: "1px solid #2a2d40", background: "#0c0e14", color: "#d4d8e8", fontSize: 11, fontFamily: "inherit" };
+const btnS = (c) => ({ padding: "5px 12px", borderRadius: 7, border: "none", background: c, color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" });
+
+function LazyPropViz() {
+  const [scenIdx, setScenIdx] = useState(0);
+  const [steps, setSteps] = useState([]);
+  const [cur, setCur] = useState(-1);
+  const [playing, setPlaying] = useState(false);
+  const [speed, setSpeed] = useState(1200);
+  const listRef = useRef(null);
+
+  useEffect(() => {
+    const s = simulate(SCENARIOS[scenIdx]);
+    setSteps(s);
+    setCur(-1);
+    setPlaying(false);
+  }, [scenIdx]);
+
+  useEffect(() => {
+    if (!playing || cur >= steps.length - 1) {
+      if (cur >= steps.length - 1) setPlaying(false);
+      return;
+    }
+    const t = setTimeout(() => setCur(c => c + 1), speed);
+    return () => clearTimeout(t);
+  }, [playing, cur, steps.length, speed]);
+
+  useEffect(() => {
+    if (listRef.current && cur >= 0) {
+      const el = listRef.current.children[cur + 1]; // +1 for the <p> header
+      if (el) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }, [cur]);
+
+  const snap = cur >= 0 && cur < steps.length ? steps[cur] : null;
+  const treeData = snap ? snap.tree : (steps.length > 0 ? steps[0].tree : createTree(INIT));
+  const highlightId = snap ? snap.highlight : null;
+  const activeNodes = snap ? snap.activeNodes : new Set();
+  const hasTag = (nd) => nd && (nd.set !== -1 || nd.add !== 0);
+  const getColor = (id) => {
+    const nodeStates = {};
+    for (let i = 0; i <= cur && i < steps.length; i++) nodeStates[steps[i].highlight] = steps[i].action;
+    return ACTION_COLORS[nodeStates[id]] || COLORS.dim;
+  };
+
+  return React.createElement("div", { style: { background: COLORS.bg, minHeight: "100vh", color: COLORS.text, fontFamily: "'JetBrains Mono','Fira Code','SF Mono',monospace", padding: 16, boxSizing: "border-box" } },
+    React.createElement("div", { style: { maxWidth: 860, margin: "0 auto" } },
+
+      // Title
+      React.createElement("h1", { style: { fontSize: 20, fontWeight: 800, textAlign: "center", margin: "0 0 2px", color: COLORS.cyan, letterSpacing: 1 } }, "LAZY PROPAGATION 動畫教學"),
+      React.createElement("p", { style: { textAlign: "center", color: COLORS.dim, fontSize: 12, margin: "0 0 14px" } }, "a[1..8] = [", INIT.join(", "), "]，線段樹維護區間和，支援區間加值 / 賦值"),
+
+      // Scenario picker
+      React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap", justifyContent: "center" } },
+        SCENARIOS.map((s, i) =>
+          React.createElement("button", {
+            key: i, onClick: () => setScenIdx(i),
+            style: { padding: "7px 14px", borderRadius: 8, border: `1.5px solid ${i === scenIdx ? COLORS.cyan : COLORS.border}`, background: i === scenIdx ? "rgba(6,182,212,0.15)" : COLORS.card, color: i === scenIdx ? COLORS.cyan : COLORS.dim, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }
+          }, s.title)
+        )
+      ),
+      React.createElement("p", { style: { textAlign: "center", color: COLORS.dim, fontSize: 12, margin: "0 0 14px", lineHeight: 1.5 } }, SCENARIOS[scenIdx].desc),
+
+      // Controls
+      React.createElement("div", { style: { background: COLORS.card, borderRadius: 10, padding: "10px 16px", marginBottom: 12, display: "flex", gap: 10, alignItems: "center", justifyContent: "center", flexWrap: "wrap", border: `1px solid ${COLORS.border}` } },
+        React.createElement("button", { onClick: () => { setCur(-1); setPlaying(false); }, style: btnS(COLORS.dim) }, "重置"),
+        React.createElement("button", { onClick: () => { setCur(c => Math.max(-1, c - 1)); setPlaying(false); }, style: btnS(COLORS.purple), disabled: cur <= -1 }, "◀"),
+        React.createElement("button", { onClick: () => { if (cur >= steps.length - 1) { setCur(-1); setTimeout(() => setPlaying(true), 80); } else setPlaying(p => !p); }, style: btnS(COLORS.cyan) }, playing ? "⏸ 暫停" : "▶ 播放"),
+        React.createElement("button", { onClick: () => { setCur(c => Math.min(steps.length - 1, c + 1)); setPlaying(false); }, style: btnS(COLORS.blue), disabled: cur >= steps.length - 1 }, "▶"),
+        React.createElement("label", { style: { fontSize: 11, color: COLORS.dim } }, "速度",
+          React.createElement("select", { value: speed, onChange: e => setSpeed(+e.target.value), style: selS },
+            React.createElement("option", { value: 2000 }, "慢"),
+            React.createElement("option", { value: 1200 }, "中"),
+            React.createElement("option", { value: 600 }, "快"),
+            React.createElement("option", { value: 300 }, "極快"),
+          )
+        ),
+        React.createElement("span", { style: { fontSize: 11, color: COLORS.dim } }, `步驟 ${cur + 1}/${steps.length}`)
+      ),
+
+      // Array
+      React.createElement("div", { style: { display: "flex", justifyContent: "center", gap: 3, marginBottom: 12 } },
+        INIT.map((v, i) =>
+          React.createElement("div", { key: i, style: { width: 46, height: 40, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", borderRadius: 6, background: COLORS.card, border: `1.5px solid ${COLORS.border}`, fontSize: 13, fontWeight: 700, color: COLORS.text } },
+            v,
+            React.createElement("span", { style: { fontSize: 9, color: COLORS.dim } }, `a[${i + 1}]`)
+          )
+        )
+      ),
+
+      // Tree SVG
+      React.createElement("div", { style: { background: COLORS.card, borderRadius: 10, padding: "8px 0 4px", marginBottom: 12, border: `1px solid ${COLORS.border}`, overflowX: "auto" } },
+        React.createElement("svg", { width: 800, height: 410, viewBox: "0 0 800 410", style: { display: "block", margin: "0 auto" } },
+          // Edges
+          EDGES.map(e => {
+            const p1 = POS[e.from], p2 = POS[e.to];
+            const active = activeNodes.has(e.from) && activeNodes.has(e.to);
+            return React.createElement("line", { key: `${e.from}-${e.to}`, x1: p1.x, y1: p1.y + 20, x2: p2.x, y2: p2.y - 20, stroke: active ? "#ffffff55" : "#222438", strokeWidth: active ? 2 : 1.2, style: { transition: "all 0.35s" } });
+          }),
+          // Nodes
+          Object.entries(POS).map(([idStr, pos]) => {
+            const id = parseInt(idStr);
+            const nd = treeData[id];
+            if (!nd) return null;
+            const isHL = highlightId === id;
+            const isActive = activeNodes.has(id);
+            const ht = hasTag(nd);
+            const color = isHL ? (ACTION_COLORS[snap?.action] || COLORS.cyan) : (isActive ? "#445" : COLORS.bg);
+            const borderColor = isHL ? "#fff" : (ht ? COLORS.yellow : (isActive ? "#556" : "#2a2d40"));
+
+            const children = [
+              isHL && React.createElement("rect", { key: "glow", x: pos.x - 30, y: pos.y - 22, width: 60, height: 44, rx: 10, fill: "none", stroke: ACTION_COLORS[snap?.action] || COLORS.cyan, strokeWidth: 2, opacity: 0.4,
+                children: React.createElement("animate", { attributeName: "opacity", values: "0.4;0.15;0.4", dur: "1s", repeatCount: "indefinite" }) }),
+              React.createElement("rect", { key: "box", x: pos.x - 27, y: pos.y - 19, width: 54, height: 38, rx: 8, fill: color, stroke: borderColor, strokeWidth: isHL ? 2.5 : 1.5, opacity: isActive || isHL ? 1 : 0.35, style: { transition: "all 0.35s" } }),
+              React.createElement("text", { key: "sum", x: pos.x, y: pos.y - 4, textAnchor: "middle", fontSize: 12, fontWeight: 700, fill: isActive || isHL ? "#fff" : COLORS.dim }, nd.sum),
+              React.createElement("text", { key: "range", x: pos.x, y: pos.y + 10, textAnchor: "middle", fontSize: 8, fill: isActive || isHL ? "#ffffff88" : "#ffffff33" }, `[${nd.L},${nd.R}]`),
+            ];
+            if (nd.set !== -1) {
+              children.push(React.createElement("rect", { key: "stag-bg", x: pos.x + 18, y: pos.y - 28, width: 32, height: 14, rx: 4, fill: COLORS.orange, opacity: 0.9 }));
+              children.push(React.createElement("text", { key: "stag-txt", x: pos.x + 34, y: pos.y - 18, textAnchor: "middle", fontSize: 8, fontWeight: 700, fill: "#fff" }, `S=${nd.set}`));
+            }
+            if (nd.add !== 0) {
+              children.push(React.createElement("rect", { key: "atag-bg", x: pos.x - 50, y: pos.y - 28, width: 38, height: 14, rx: 4, fill: COLORS.green, opacity: 0.9 }));
+              children.push(React.createElement("text", { key: "atag-txt", x: pos.x - 31, y: pos.y - 18, textAnchor: "middle", fontSize: 8, fontWeight: 700, fill: "#fff" }, `A=+${nd.add}`));
+            }
+            return React.createElement("g", { key: id }, ...children.filter(Boolean));
+          })
+        )
+      ),
+
+      // Step explanation
+      React.createElement("div", { style: { background: COLORS.card, borderRadius: 10, padding: "12px 16px", marginBottom: 12, border: `1px solid ${COLORS.border}`, minHeight: 60 } },
+        snap ? React.createElement("div", null,
+          React.createElement("span", { style: { display: "inline-block", padding: "2px 10px", borderRadius: 5, fontSize: 10, fontWeight: 700, background: ACTION_COLORS[snap.action] || COLORS.dim, color: "#fff", marginBottom: 6 } }, ACTION_LABELS[snap.action] || snap.action),
+          React.createElement("p", { style: { margin: "4px 0 0", fontSize: 13, lineHeight: 1.6 } }, snap.desc),
+          snap.action === "push" && React.createElement("p", { style: { margin: "6px 0 0", fontSize: 12, color: COLORS.yellow, lineHeight: 1.5 }, dangerouslySetInnerHTML: { __html: "💡 <b>Push 下推</b>：要進入子節點前，必須把自己的懶標記傳下去。<br/>set 標記 → 子節點的 sum 被覆蓋，子節點舊的 add 被清掉<br/>add 標記 → 子節點的 sum 增加，子節點的 add 累加" } }),
+          snap.action === "tag_add" && React.createElement("p", { style: { margin: "6px 0 0", fontSize: 12, color: COLORS.green, lineHeight: 1.5 }, dangerouslySetInnerHTML: { __html: "💡 <b>打 add 標記</b>：這個區間完全在修改範圍內，直接更新 sum 並記下「子孫都要加值」，不再往下走！" } }),
+          snap.action === "tag_set" && React.createElement("p", { style: { margin: "6px 0 0", fontSize: 12, color: COLORS.orange, lineHeight: 1.5 }, dangerouslySetInnerHTML: { __html: "💡 <b>打 set 標記</b>：整個區間被賦值，sum 直接算出。舊的 add 清零（被 set 覆蓋了），記下「子孫都要改成這個值」。" } }),
+        ) : React.createElement("p", { style: { margin: 0, fontSize: 13, color: COLORS.dim } }, "按 ▶ 開始播放，或用 ◀ ▶ 逐步觀察")
+      ),
+
+      // Legend
+      React.createElement("div", { style: { display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", fontSize: 11, marginBottom: 12 } },
+        [
+          { bg: COLORS.green, label: "A=+n", text: "Add 標記" },
+          { bg: COLORS.orange, label: "S=n", text: "Set 標記" },
+          { bg: COLORS.yellow, label: "PUSH", text: "下推標記" },
+          { bg: COLORS.blue, label: "PULL", text: "上拉更新" },
+          { bg: COLORS.cyan, label: "HIT", text: "查詢命中" },
+        ].map(item =>
+          React.createElement("div", { key: item.text, style: { display: "flex", alignItems: "center", gap: 5 } },
+            React.createElement("span", { style: { display: "inline-block", padding: "1px 6px", borderRadius: 4, background: item.bg, color: "#fff", fontSize: 9, fontWeight: 700 } }, item.label),
+            React.createElement("span", { style: { color: COLORS.dim } }, item.text)
+          )
+        )
+      ),
+
+      // Step list
+      React.createElement("div", { ref: listRef, style: { background: COLORS.card, borderRadius: 10, padding: "12px 14px", border: `1px solid ${COLORS.border}`, maxHeight: 220, overflowY: "auto" } },
+        React.createElement("p", { style: { fontSize: 11, color: COLORS.dim, margin: "0 0 6px" } }, "完整步驟（可點擊跳轉）："),
+        steps.map((s, i) =>
+          React.createElement("div", {
+            key: i, onClick: () => { setCur(i); setPlaying(false); },
+            style: { padding: "4px 8px", marginBottom: 2, borderRadius: 5, fontSize: 11, cursor: "pointer", background: i === cur ? "rgba(255,255,255,0.07)" : "transparent", opacity: i <= cur ? 1 : 0.3, borderLeft: `3px solid ${i === cur ? (ACTION_COLORS[s.action] || COLORS.dim) : "transparent"}`, transition: "all 0.15s", lineHeight: 1.5, color: COLORS.text }
+          },
+            React.createElement("span", { style: { color: COLORS.dim, marginRight: 6 } }, `${i + 1}.`),
+            React.createElement("span", { style: { color: ACTION_COLORS[s.action] || COLORS.dim, fontWeight: 600, marginRight: 4, fontSize: 10 } }, `[${ACTION_LABELS[s.action]}]`),
+            s.desc
+          )
+        )
+      ),
+
+      // Concept summary
+      React.createElement("div", { style: { background: COLORS.card, borderRadius: 10, padding: "14px 16px", marginTop: 12, border: `1px solid ${COLORS.border}`, fontSize: 12, lineHeight: 1.8, color: COLORS.dim }, dangerouslySetInnerHTML: { __html: `
+        <p style="margin:0 0 6px;color:${COLORS.text};font-weight:700;font-size:14px">懶標記核心概念：</p>
+        <p style="margin:0">
+          <span style="color:${COLORS.green}">■</span> <b style="color:${COLORS.text}">為什麼要 Lazy？</b> 區間修改時，不需要一路改到葉節點。遇到完全包含的區間就「打標記停下來」，等到真正需要進入子樹時才 push 下推。<br/>
+          <span style="color:${COLORS.yellow}">■</span> <b style="color:${COLORS.text}">什麼時候 Push？</b> 每次要遞迴進入子節點之前（不論是修改還是查詢），都必須先把當前節點的標記下推給左右子節點。<br/>
+          <span style="color:${COLORS.orange}">■</span> <b style="color:${COLORS.text}">Set + Add 的順序？</b> 語意是「先 set 再 add」。新的 set 會清掉舊的 add（被覆蓋），新的 add 則是在現有基礎上累加。<br/>
+          <span style="color:${COLORS.blue}">■</span> <b style="color:${COLORS.text}">Pull 是什麼？</b> 遞迴回來後，用左右子節點的 sum 更新自己的 sum，確保祖先的資訊是正確的。
+        </p>
+      ` } })
+    )
+  );
+}
+
+ReactDOM.render(React.createElement(LazyPropViz), document.getElementById("root"));
+</script>
+</body>
+</html>
