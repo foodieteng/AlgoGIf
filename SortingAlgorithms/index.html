@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sorting Algorithms - 排序演算法整理</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Noto Sans TC', sans-serif;
+  background: #04060d;
+  color: #e2e8f0;
+  min-height: 100vh;
+  padding: 20px 12px 48px;
+}
+
+h1 {
+  text-align: center;
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: -0.8px;
+  margin-bottom: 4px;
+}
+
+.subtitle {
+  text-align: center;
+  color: #3b4252;
+  font-size: 12px;
+  margin-bottom: 22px;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  justify-content: center;
+  margin-bottom: 20px;
+  max-width: 780px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.tab-btn {
+  padding: 6px 12px;
+  border-radius: 16px;
+  border: 2px solid #141822;
+  background: #0a0e18;
+  color: #4b5563;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.tab-btn.active {
+  border-color: var(--algo-color);
+  background: color-mix(in srgb, var(--algo-color) 12%, transparent);
+  color: var(--algo-color);
+}
+
+.tab-btn:hover:not(.active) {
+  border-color: #2a3040;
+  color: #8b95a5;
+}
+
+/* Main Card */
+.card {
+  max-width: 780px;
+  margin: 0 auto;
+  background: #0a0e18;
+  border-radius: 20px;
+  border: 1px solid color-mix(in srgb, var(--algo-color) 12%, transparent);
+  overflow: hidden;
+  box-shadow: 0 0 80px color-mix(in srgb, var(--algo-color) 4%, transparent);
+}
+
+.algo-header {
+  padding: 18px 22px 12px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.algo-icon { font-size: 34px; line-height: 1; }
+
+.algo-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.algo-title h2 {
+  font-size: 21px;
+  font-weight: 900;
+  color: var(--algo-color);
+  margin: 0;
+}
+
+.stable-badge {
+  padding: 2px 9px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.stable-badge.yes {
+  background: rgba(6, 95, 70, 0.08);
+  color: #4ade80;
+  border: 1px solid rgba(74, 222, 128, 0.15);
+}
+
+.stable-badge.no {
+  background: rgba(127, 29, 29, 0.08);
+  color: #f87171;
+  border: 1px solid rgba(248, 113, 113, 0.15);
+}
+
+.algo-desc {
+  margin: 5px 0 0;
+  font-size: 12.5px;
+  color: #8b95a5;
+  line-height: 1.5;
+}
+
+/* Complexity Grid */
+.complexity-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: #141822;
+  margin: 0 1px;
+}
+
+.complexity-cell {
+  background: #0a0e18;
+  padding: 9px 8px;
+  text-align: center;
+}
+
+.complexity-label {
+  font-size: 9px;
+  color: #3d4455;
+  margin-bottom: 2px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+}
+
+.complexity-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--algo-color);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Key Points */
+.key-points {
+  padding: 10px 22px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.key-point {
+  padding: 3px 10px;
+  border-radius: 7px;
+  font-size: 10.5px;
+  font-weight: 500;
+  background: color-mix(in srgb, var(--algo-color) 5%, transparent);
+  color: color-mix(in srgb, var(--algo-color) 75%, white);
+  border: 1px solid color-mix(in srgb, var(--algo-color) 10%, transparent);
+}
+
+/* Code Section */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #8b95a5;
+  letter-spacing: -0.3px;
+}
+
+.section-tag {
+  font-size: 10px;
+  color: #3d4455;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.code-section { padding: 6px 18px 16px; }
+
+.code-block {
+  background: #06080f;
+  color: #c9d1d9;
+  padding: 16px 16px 16px 0;
+  border-radius: 14px;
+  font-size: 12px;
+  line-height: 1.65;
+  overflow-x: auto;
+  font-family: 'JetBrains Mono', monospace;
+  border: 1px solid color-mix(in srgb, var(--algo-color) 12%, transparent);
+  white-space: pre;
+}
+
+.code-line {
+  display: flex;
+  min-height: 19.8px;
+}
+
+.line-num {
+  color: #3d4455;
+  width: 36px;
+  flex-shrink: 0;
+  text-align: right;
+  margin-right: 14px;
+  user-select: none;
+  font-size: 10.5px;
+  line-height: 19.8px;
+}
+
+.code-block .kw { color: #c678dd; }
+.code-block .fn { color: #e5c07b; }
+.code-block .num { color: #d19a66; }
+.code-block .cmt { color: #5c6370; font-style: italic; }
+.code-block .str { color: #98c379; }
+
+/* Animation Section */
+.anim-section { padding: 6px 18px 12px; }
+
+.anim-box {
+  background: #06080f;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--algo-color) 10%, transparent);
+  padding: 16px 8px 12px;
+}
+
+.bars-container {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  height: 180px;
+  gap: 2px;
+}
+
+.bar {
+  border-radius: 2px 2px 0 0;
+  transition: height 0.05s, background 0.05s;
+}
+
+.bar.comparing { background: #fbbf24 !important; box-shadow: 0 0 8px #fbbf2466; }
+.bar.swapping { background: #f43f5e !important; box-shadow: 0 0 8px #f43f5e66; }
+.bar.sorted { background: var(--algo-color) !important; }
+.bar.pivot { background: #22d3ee !important; box-shadow: 0 0 8px #22d3ee66; }
+
+.legend {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+.legend-label {
+  font-size: 10px;
+  color: #4b5563;
+}
+
+/* Controls */
+.controls {
+  padding: 12px 22px 16px;
+  border-top: 1px solid #141822;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.btn-start {
+  padding: 8px 22px;
+  border-radius: 11px;
+  border: none;
+  background: linear-gradient(135deg, var(--algo-color), color-mix(in srgb, var(--algo-color) 80%, black));
+  color: #fff;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  box-shadow: 0 4px 20px color-mix(in srgb, var(--algo-color) 25%, transparent);
+}
+
+.btn-start.running {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  box-shadow: 0 4px 20px rgba(239, 68, 68, 0.25);
+}
+
+.btn-reset {
+  padding: 8px 16px;
+  border-radius: 11px;
+  border: 1px solid #1e2536;
+  background: #0f1320;
+  color: #8b95a5;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+}
+
+.speed-control {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.speed-label {
+  font-size: 9px;
+  color: #3d4455;
+}
+
+input[type="range"] {
+  width: 68px;
+  accent-color: var(--algo-color);
+}
+
+.step-count {
+  font-size: 11px;
+  color: #3d4455;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Comparison Table */
+.table-card {
+  max-width: 780px;
+  margin: 24px auto 0;
+  background: #0a0e18;
+  border-radius: 16px;
+  border: 1px solid #141822;
+  overflow: hidden;
+}
+
+.table-card h3 {
+  padding: 13px 20px;
+  border-bottom: 1px solid #141822;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.table-wrap { overflow-x: auto; }
+
+.table-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.table-wrap th {
+  padding: 8px 10px;
+  text-align: left;
+  color: #3d4455;
+  font-weight: 700;
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  white-space: nowrap;
+  border-bottom: 1px solid #141822;
+}
+
+.table-wrap td {
+  padding: 8px 10px;
+  font-family: 'JetBrains Mono', monospace;
+  color: #6b7688;
+  font-size: 10.5px;
+}
+
+.table-wrap tr {
+  cursor: pointer;
+  transition: background 0.1s;
+  border-bottom: 1px solid rgba(20, 24, 34, 0.03);
+}
+
+.table-wrap tbody tr:hover { background: rgba(255, 255, 255, 0.02); }
+.table-wrap tbody tr.active { background: color-mix(in srgb, var(--algo-color) 4%, transparent); }
+
+.table-name {
+  font-weight: 700;
+  white-space: nowrap;
+  font-size: 11.5px;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.back-link {
+  display: inline-block;
+  max-width: 780px;
+  margin: 0 auto 16px;
+  color: #4b5563;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 500;
+}
+.back-link:hover { color: #8b95a5; }
+</style>
+</head>
+<body>
+
+<div style="max-width:780px;margin:0 auto;">
+  <a href="../" class="back-link">← 返回作品集</a>
+</div>
+
+<h1 id="mainTitle">排序演算法完整整理</h1>
+<p class="subtitle">9 種經典排序 · 完整 C++ 程式碼 · 互動動畫演示</p>
+
+<div class="tabs" id="tabs"></div>
+
+<div class="card" id="card">
+  <div class="algo-header">
+    <span class="algo-icon" id="algoIcon"></span>
+    <div style="flex:1">
+      <div class="algo-title">
+        <h2 id="algoName"></h2>
+        <span class="stable-badge" id="stableBadge"></span>
+      </div>
+      <p class="algo-desc" id="algoDesc"></p>
+    </div>
+  </div>
+
+  <div class="complexity-grid" id="complexityGrid"></div>
+
+  <div class="key-points" id="keyPoints"></div>
+
+  <div class="code-section">
+    <div class="section-header">
+      <span class="section-title">&lt;/&gt; 完整程式碼</span>
+      <span class="section-tag">C++</span>
+    </div>
+    <div class="code-block" id="codeBlock"></div>
+  </div>
+
+  <div class="anim-section">
+    <div class="section-header">
+      <span class="section-title">📊 動畫演示</span>
+      <span class="step-count" id="stepCount"></span>
+    </div>
+    <div class="anim-box">
+      <div class="bars-container" id="barsContainer"></div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#fbbf24"></div><span class="legend-label">比較中</span></div>
+        <div class="legend-item"><div class="legend-dot" style="background:#f43f5e"></div><span class="legend-label">交換中</span></div>
+        <div class="legend-item"><div class="legend-dot" id="legendSorted"></div><span class="legend-label">已排序</span></div>
+        <div class="legend-item"><div class="legend-dot" style="background:#22d3ee"></div><span class="legend-label">Pivot</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn-start" id="btnStart" onclick="toggleSort()">▶ 開始排序</button>
+    <button class="btn-reset" onclick="resetArray()">🔄 重新產生</button>
+    <div class="speed-control">
+      <span class="speed-label">慢</span>
+      <input type="range" id="speedSlider" min="1" max="100" value="50">
+      <span class="speed-label">快</span>
+    </div>
+    <span class="step-count" id="stepCountCtrl"></span>
+  </div>
+</div>
+
+<div class="table-card">
+  <h3>📊 九大排序演算法對照表</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>演算法</th><th>Best</th><th>Avg</th><th>Worst</th><th>Space</th><th>穩定</th><th>核心特點</th></tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+// ═══ DATA ═══
+const ALGOS = [
+  { id:"bubble", name:"Bubble Sort", icon:"🫧", best:"O(n)", avg:"O(n²)", worst:"O(n²)", space:"O(1)", stable:true, desc:"反覆比較相鄰元素，將較大的元素「冒泡」到陣列末端。每一輪確定一個最大值的位置。", color:"#6366f1", keys:["相鄰比較交換","swapped 提早終止","最簡單的排序"] },
+  { id:"selection", name:"Selection Sort", icon:"👆", best:"O(n²)", avg:"O(n²)", worst:"O(n²)", space:"O(1)", stable:false, desc:"每次從未排序區域中選出最小元素，放到已排序區域的末端。", color:"#ec4899", keys:["找最小值放前面","每輪最多交換1次","不穩定排序"] },
+  { id:"insertion", name:"Insertion Sort", icon:"🃏", best:"O(n)", avg:"O(n²)", worst:"O(n²)", space:"O(1)", stable:true, desc:"類似整理撲克牌，將每個元素插入到已排序部分的正確位置。", color:"#14b8a6", keys:["像整理撲克牌","近乎有序時很快","穩定原地排序"] },
+  { id:"quick", name:"Quick Sort", icon:"⚡", best:"O(n log n)", avg:"O(n log n)", worst:"O(n²)", space:"O(log n)", stable:false, desc:"選定 pivot，小於 pivot 放左邊、大於放右邊，遞迴排序子陣列。", color:"#f59e0b", keys:["分治法 + Partition","Pivot 選擇影響效能","平均最快比較排序"] },
+  { id:"merge", name:"Merge Sort", icon:"🔀", best:"O(n log n)", avg:"O(n log n)", worst:"O(n log n)", space:"O(n)", stable:true, desc:"分治法：將陣列不斷二分，排序後再合併。保證 O(n log n) 的穩定排序。", color:"#8b5cf6", keys:["分割→排序→合併","穩定且保證 O(n log n)","需 O(n) 額外空間"] },
+  { id:"heap", name:"Heap Sort", icon:"🏔️", best:"O(n log n)", avg:"O(n log n)", worst:"O(n log n)", space:"O(1)", stable:false, desc:"利用最大堆性質，每次取出堆頂最大值放到末端，再調整堆結構。", color:"#ef4444", keys:["建堆→取最大值","原地 O(1) 空間","heapify 核心操作"] },
+  { id:"shell", name:"Shell Sort", icon:"🐚", best:"O(n log n)", avg:"O(n^1.3)", worst:"O(n²)", space:"O(1)", stable:false, desc:"插入排序的改良版，透過逐步縮小間隔（gap）來加速排序。", color:"#06b6d4", keys:["插入排序 gap 改良","gap 序列影響效能","減少大距離搬移"] },
+  { id:"bucket", name:"Bucket Sort", icon:"🪣", best:"O(n+k)", avg:"O(n+k)", worst:"O(n²)", space:"O(n+k)", stable:true, desc:"將元素分配到不同桶中，各桶內部排序後依序合併。", color:"#84cc16", keys:["分桶→桶內排序→合併","適合均勻分布","桶數影響效能"] },
+  { id:"radix", name:"Radix Sort", icon:"🔢", best:"O(nk)", avg:"O(nk)", worst:"O(nk)", space:"O(n+k)", stable:true, desc:"非比較排序，依照每個位數分別做 counting sort，從最低位到最高位。", color:"#f97316", keys:["非比較排序","LSD 低位到高位","需處理負數"] },
+];
+
+const CODE = {
+bubble: `void bubbleSort(vector<int>& a) {
+    int n = a.size();
+
+    for (int i = 0; i < n - 1; i++) {
+        bool swapped = false;
+        for (int j = 0; j < n - i - 1; j++) {
+            if (a[j] > a[j + 1]) {
+                swap(a[j], a[j + 1]);
+                swapped = true;
+            }
+        }
+        if (!swapped) break;  // 提早終止優化
+    }
+}`,
+selection: `void selectionSort(vector<int>& a) {
+    int n = a.size();
+    for (int i = 0; i < n - 1; i++) {
+        int minIdx = i;
+        for (int j = i + 1; j < n; j++) {
+            if (a[j] < a[minIdx]) {
+                minIdx = j;
+            }
+        }
+        swap(a[minIdx], a[i]);
+    }
+}`,
+insertion: `void insertionSort(vector<int>& a) {
+    int n = a.size();
+    for (int i = 1; i < n; i++) {
+        int key = a[i];
+        int j = i - 1;
+        while (j >= 0 && a[j] > key) {
+            a[j + 1] = a[j];
+            j--;
+        }
+        a[j + 1] = key;
+    }
+}`,
+quick: `int partition(vector<int>& a, int l, int r) {
+    int pivot = a[r];       // 選最右邊為 pivot
+    int i = l;
+    for (int j = l; j < r; j++) {
+        if (a[j] <= pivot) {
+            swap(a[j], a[i]);
+            i++;
+        }
+    }
+    swap(a[i], a[r]);       // pivot 歸位
+    return i;
+}
+
+void quickSort(vector<int>& a, int l, int r) {
+    if (l >= r) return;
+    int p = partition(a, l, r);
+    quickSort(a, l, p - 1);  // 排左半
+    quickSort(a, p + 1, r);  // 排右半
+}`,
+merge: `void merge(vector<int>& a, int l, int m, int r) {
+    vector<int> tmp;
+    int i = l, j = m + 1;
+    while (i <= m && j <= r) {
+        if (a[i] <= a[j])
+            tmp.push_back(a[i++]);
+        else
+            tmp.push_back(a[j++]);
+    }
+    while (i <= m) tmp.push_back(a[i++]);
+    while (j <= r) tmp.push_back(a[j++]);
+
+    for (int k = 0; k < tmp.size(); k++)
+        a[l + k] = tmp[k];
+}
+
+void mergeSort(vector<int>& a, int l, int r) {
+    if (l >= r) return;
+    int m = l + (r - l) / 2;
+    mergeSort(a, l, m);      // 排左半
+    mergeSort(a, m + 1, r);  // 排右半
+    merge(a, l, m, r);       // 合併
+}`,
+heap: `void heapify(vector<int>& a, int n, int i) {
+    int largest = i;
+    int l = 2 * i + 1, r = 2 * i + 2;
+    if (l < n && a[l] > a[largest]) largest = l;
+    if (r < n && a[r] > a[largest]) largest = r;
+
+    if (largest != i) {
+        swap(a[largest], a[i]);
+        heapify(a, n, largest);  // 遞迴調整
+    }
+}
+
+void heapSort(vector<int>& a) {
+    int n = a.size();
+    // 建立 max heap
+    for (int i = (n / 2) - 1; i >= 0; i--)
+        heapify(a, n, i);
+
+    // 逐一取出最大值
+    for (int i = n - 1; i > 0; i--) {
+        swap(a[0], a[i]);    // 最大值放末端
+        heapify(a, i, 0);   // 調整剩餘堆
+    }
+}`,
+shell: `void shellSort(vector<int>& a) {
+    int n = a.size();
+    // gap 從 n/2 開始，逐步縮小
+    for (int gap = n / 2; gap > 0; gap /= 2) {
+        for (int i = gap; i < n; i++) {
+            int key = a[i];
+            int j = i - gap;
+            // 間隔為 gap 的插入排序
+            while (j >= 0 && a[j] > key) {
+                a[j + gap] = a[j];
+                j -= gap;
+            }
+            a[j + gap] = key;
+        }
+    }
+}`,
+bucket: `void bucketSort(vector<int>& a) {
+    int n = a.size();
+    if (n == 0) return;
+
+    int minv = *min_element(a.begin(), a.end());
+    int maxv = *max_element(a.begin(), a.end());
+    double range = double(maxv - minv + 1);
+    vector<vector<int>> buckets(n);
+
+    // 分配到各桶
+    for (int x : a) {
+        int idx = (int)(((double)(x - minv) / range) * (n - 1));
+        buckets[idx].push_back(x);
+    }
+
+    // 各桶排序後合併
+    a.clear();
+    for (auto& b : buckets) {
+        sort(b.begin(), b.end());
+        for (int x : b) a.push_back(x);
+    }
+}`,
+radix: `vector<int> radix(vector<int>& a, int exp) {
+    int n = a.size();
+    vector<int> cnt(10, 0), output(n);
+
+    for (int i = 0; i < n; i++)
+        cnt[(a[i] / exp) % 10]++;       // 計數
+    for (int i = 1; i < 10; i++)
+        cnt[i] += cnt[i - 1];           // 前綴和
+    for (int i = n - 1; i >= 0; i--)    // 穩定排序
+        output[--cnt[(a[i] / exp) % 10]] = a[i];
+    return output;
+}
+
+void radixSort(vector<int>& a) {
+    // 正數負數分開處理
+    vector<int> pos, neg;
+    for (int x : a) {
+        if (x >= 0) pos.push_back(x);
+        else neg.push_back(-x);
+    }
+
+    int maxp = 0, minp = 0;
+    for (int x : pos) maxp = max(maxp, x);
+    for (int x : neg) minp = max(minp, x);
+
+    for (int exp = 1; exp <= maxp; exp *= 10)
+        pos = radix(pos, exp);
+    for (int exp = 1; exp <= minp; exp *= 10)
+        neg = radix(neg, exp);
+
+    reverse(neg.begin(), neg.end());
+    a.clear();
+    for (int x : neg) a.push_back(-x);  // 負數反轉
+    for (int x : pos) a.push_back(x);
+}`
+};
+
+// ═══ STATE ═══
+let currentTab = "bubble";
+let arr = generateArray();
+let displayArr = [...arr];
+let sortState = {};
+let running = false;
+let cancelled = false;
+let speed = 50;
+let steps = 0;
+
+function generateArray(size = 24) {
+  const a = [];
+  for (let i = 0; i < size; i++) a.push(Math.floor(Math.random() * 90) + 5);
+  return a;
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ═══ SYNTAX HIGHLIGHT ═══
+function highlightCode(code) {
+  const lines = code.split("\n");
+  return lines.map((line, i) => {
+    let h = line
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/(\/\/.*)/g, '<span class="cmt">$1</span>')
+      .replace(/\b(void|int|bool|double|for|while|if|return|true|false|auto|vector|else|break)\b/g, '<span class="kw">$1</span>')
+      .replace(/\b(swap|push_back|clear|sort|size|begin|end|min_element|max_element|max|reverse)\b/g, '<span class="fn">$1</span>')
+      .replace(/\b(\d+)\b/g, '<span class="num">$1</span>');
+    return `<div class="code-line"><span class="line-num">${i + 1}</span><span>${h}</span></div>`;
+  }).join("");
+}
+
+// ═══ RENDER ═══
+function render() {
+  const algo = ALGOS.find(a => a.id === currentTab);
+  document.documentElement.style.setProperty("--algo-color", algo.color);
+
+  // Title gradient
+  document.getElementById("mainTitle").style.background = `linear-gradient(135deg, ${algo.color}, #818cf8)`;
+  document.getElementById("mainTitle").style.webkitBackgroundClip = "text";
+  document.getElementById("mainTitle").style.webkitTextFillColor = "transparent";
+
+  // Tabs
+  document.getElementById("tabs").innerHTML = ALGOS.map(a =>
+    `<button class="tab-btn ${a.id === currentTab ? 'active' : ''}" style="--algo-color:${a.color}" onclick="switchTab('${a.id}')">${a.icon} ${a.name}</button>`
+  ).join("");
+
+  // Header
+  document.getElementById("algoIcon").textContent = algo.icon;
+  document.getElementById("algoName").textContent = algo.name;
+  const badge = document.getElementById("stableBadge");
+  badge.textContent = algo.stable ? "✓ 穩定" : "✗ 不穩定";
+  badge.className = "stable-badge " + (algo.stable ? "yes" : "no");
+  document.getElementById("algoDesc").textContent = algo.desc;
+
+  // Complexity
+  document.getElementById("complexityGrid").innerHTML = [
+    { l: "Best", v: algo.best }, { l: "Average", v: algo.avg },
+    { l: "Worst", v: algo.worst }, { l: "Space", v: algo.space }
+  ].map(x => `<div class="complexity-cell"><div class="complexity-label">${x.l}</div><div class="complexity-value">${x.v}</div></div>`).join("");
+
+  // Key points
+  document.getElementById("keyPoints").innerHTML = algo.keys.map(k => `<span class="key-point">${k}</span>`).join("");
+
+  // Code
+  document.getElementById("codeBlock").innerHTML = highlightCode(CODE[algo.id]);
+
+  // Legend sorted dot
+  document.getElementById("legendSorted").style.background = algo.color;
+
+  renderBars();
+  renderTable();
+}
+
+function renderBars() {
+  const container = document.getElementById("barsContainer");
+  const maxVal = Math.max(...arr, 100);
+  const bw = Math.max(3, Math.min(24, Math.floor(520 / displayArr.length) - 2));
+
+  container.innerHTML = displayArr.map((val, i) => {
+    const h = (val / maxVal) * 160;
+    let cls = "bar";
+    if (sortState.sorted && sortState.sorted.includes(i)) cls += " sorted";
+    if (sortState.comparing && sortState.comparing.includes(i)) cls += " comparing";
+    if (sortState.swapping && sortState.swapping.includes(i)) cls += " swapping";
+    if (sortState.pivot === i) cls += " pivot";
+    const algo = ALGOS.find(a => a.id === currentTab);
+    return `<div class="${cls}" style="width:${bw}px;height:${h}px;background:${algo.color}70"></div>`;
+  }).join("");
+}
+
+function renderTable() {
+  document.getElementById("tableBody").innerHTML = ALGOS.map(a =>
+    `<tr class="${a.id === currentTab ? 'active' : ''}" style="--algo-color:${a.color}" onclick="switchTab('${a.id}');window.scrollTo({top:0,behavior:'smooth'})">
+      <td class="table-name" style="color:${a.color};font-family:'Noto Sans TC',sans-serif">${a.icon} ${a.name}</td>
+      <td>${a.best}</td><td>${a.avg}</td><td>${a.worst}</td><td>${a.space}</td>
+      <td style="color:${a.stable ? '#4ade80' : '#f87171'};font-weight:700">${a.stable ? '✓' : '✗'}</td>
+      <td style="color:#4b5563;font-family:'Noto Sans TC',sans-serif;font-size:10.5px">${a.keys[0]}</td>
+    </tr>`
+  ).join("");
+}
+
+function switchTab(id) {
+  cancelled = true;
+  running = false;
+  currentTab = id;
+  displayArr = [...arr];
+  sortState = {};
+  steps = 0;
+  document.getElementById("stepCount").textContent = "";
+  document.getElementById("stepCountCtrl").textContent = "";
+  document.getElementById("btnStart").textContent = "▶ 開始排序";
+  document.getElementById("btnStart").classList.remove("running");
+  render();
+}
+
+function resetArray() {
+  cancelled = true;
+  running = false;
+  arr = generateArray();
+  displayArr = [...arr];
+  sortState = {};
+  steps = 0;
+  document.getElementById("stepCount").textContent = "";
+  document.getElementById("stepCountCtrl").textContent = "";
+  document.getElementById("btnStart").textContent = "▶ 開始排序";
+  document.getElementById("btnStart").classList.remove("running");
+  render();
+}
+
+// ═══ SORTING GENERATORS ═══
+function* bubbleGen(a) {
+  const n = a.length;
+  for (let i = 0; i < n - 1; i++) {
+    for (let j = 0; j < n - i - 1; j++) {
+      yield { array: [...a], comparing: [j, j+1], sorted: Array.from({length:i},(_,k)=>n-1-k) };
+      if (a[j] > a[j+1]) { [a[j],a[j+1]]=[a[j+1],a[j]]; yield { array:[...a], swapping:[j,j+1], sorted:Array.from({length:i},(_,k)=>n-1-k) }; }
+    }
+  }
+  yield { array:[...a], sorted:Array.from({length:n},(_,i)=>i) };
+}
+
+function* selectionGen(a) {
+  const n = a.length; const sorted = [];
+  for (let i = 0; i < n-1; i++) {
+    let mi = i;
+    for (let j = i+1; j < n; j++) { yield { array:[...a], comparing:[mi,j], sorted:[...sorted] }; if (a[j]<a[mi]) mi=j; }
+    [a[i],a[mi]]=[a[mi],a[i]]; sorted.push(i); yield { array:[...a], swapping:[i,mi], sorted:[...sorted] };
+  }
+  sorted.push(n-1); yield { array:[...a], sorted:[...sorted] };
+}
+
+function* insertionGen(a) {
+  const n = a.length;
+  for (let i = 1; i < n; i++) {
+    let key = a[i], j = i-1;
+    yield { array:[...a], comparing:[i] };
+    while (j >= 0 && a[j] > key) { a[j+1]=a[j]; yield { array:[...a], swapping:[j,j+1] }; j--; }
+    a[j+1] = key;
+  }
+  yield { array:[...a], sorted:Array.from({length:n},(_,i)=>i) };
+}
+
+function* quickGen(a) {
+  const ss = new Set();
+  function* qs(l, r) {
+    if (l >= r) { if (l===r) ss.add(l); return; }
+    let pivot=a[r], i=l;
+    yield { array:[...a], pivot:r, sorted:[...ss] };
+    for (let j=l; j<r; j++) {
+      yield { array:[...a], comparing:[j,r], pivot:r, sorted:[...ss] };
+      if (a[j]<=pivot) { [a[i],a[j]]=[a[j],a[i]]; yield { array:[...a], swapping:[i,j], pivot:r, sorted:[...ss] }; i++; }
+    }
+    [a[i],a[r]]=[a[r],a[i]]; ss.add(i); yield { array:[...a], swapping:[i,r], sorted:[...ss] };
+    yield* qs(l, i-1); yield* qs(i+1, r);
+  }
+  yield* qs(0, a.length-1);
+  yield { array:[...a], sorted:Array.from({length:a.length},(_,i)=>i) };
+}
+
+function* mergeGen(a) {
+  function* ms(l, r) {
+    if (l >= r) return;
+    const m = Math.floor((l+r)/2); yield* ms(l,m); yield* ms(m+1,r);
+    const tmp=[]; let i=l, j=m+1;
+    while (i<=m && j<=r) { yield { array:[...a], comparing:[i,j] }; if (a[i]<=a[j]) tmp.push(a[i++]); else tmp.push(a[j++]); }
+    while (i<=m) tmp.push(a[i++]); while (j<=r) tmp.push(a[j++]);
+    for (let k=0; k<tmp.length; k++) { a[l+k]=tmp[k]; yield { array:[...a], swapping:[l+k] }; }
+  }
+  yield* ms(0, a.length-1);
+  yield { array:[...a], sorted:Array.from({length:a.length},(_,i)=>i) };
+}
+
+function* heapGen(a) {
+  const n = a.length;
+  function* hf(sz, i) {
+    let lg=i, l=2*i+1, r=2*i+2;
+    if (l<sz && a[l]>a[lg]) lg=l; if (r<sz && a[r]>a[lg]) lg=r;
+    if (lg!==i) { [a[i],a[lg]]=[a[lg],a[i]]; yield { array:[...a], swapping:[i,lg] }; yield* hf(sz,lg); }
+  }
+  for (let i=Math.floor(n/2)-1; i>=0; i--) yield* hf(n,i);
+  const sorted = [];
+  for (let i=n-1; i>0; i--) { [a[0],a[i]]=[a[i],a[0]]; sorted.push(i); yield { array:[...a], swapping:[0,i], sorted:[...sorted] }; yield* hf(i,0); }
+  sorted.push(0); yield { array:[...a], sorted:[...sorted] };
+}
+
+function* shellGen(a) {
+  const n = a.length;
+  for (let gap=Math.floor(n/2); gap>0; gap=Math.floor(gap/2)) {
+    for (let i=gap; i<n; i++) {
+      let key=a[i], j=i-gap; yield { array:[...a], comparing:[i] };
+      while (j>=0 && a[j]>key) { a[j+gap]=a[j]; yield { array:[...a], swapping:[j,j+gap] }; j-=gap; }
+      a[j+gap]=key;
+    }
+  }
+  yield { array:[...a], sorted:Array.from({length:n},(_,i)=>i) };
+}
+
+function* bucketGen(a) {
+  const n=a.length, mn=Math.min(...a), mx=Math.max(...a), rng=mx-mn+1;
+  const bk=Array.from({length:Math.min(n,10)},()=>[]);
+  for (let i=0; i<n; i++) { bk[Math.floor(((a[i]-mn)/rng)*(bk.length-1))].push(a[i]); yield { array:[...a], comparing:[i] }; }
+  let pos=0;
+  for (let b of bk) { b.sort((x,y)=>x-y); for (let v of b) { a[pos]=v; yield { array:[...a], swapping:[pos] }; pos++; } }
+  yield { array:[...a], sorted:Array.from({length:n},(_,i)=>i) };
+}
+
+function* radixGen(a) {
+  const mx=Math.max(...a.map(Math.abs));
+  for (let exp=1; exp<=mx; exp*=10) {
+    const cnt=new Array(10).fill(0), out=new Array(a.length);
+    for (let i=0; i<a.length; i++) { cnt[Math.floor(Math.abs(a[i])/exp)%10]++; yield { array:[...a], comparing:[i] }; }
+    for (let i=1; i<10; i++) cnt[i]+=cnt[i-1];
+    for (let i=a.length-1; i>=0; i--) out[--cnt[Math.floor(Math.abs(a[i])/exp)%10]]=a[i];
+    for (let i=0; i<a.length; i++) { a[i]=out[i]; yield { array:[...a], swapping:[i] }; }
+  }
+  yield { array:[...a], sorted:Array.from({length:a.length},(_,i)=>i) };
+}
+
+const GENS = { bubble:bubbleGen, selection:selectionGen, insertion:insertionGen, quick:quickGen, merge:mergeGen, heap:heapGen, shell:shellGen, bucket:bucketGen, radix:radixGen };
+
+// ═══ RUN SORT ═══
+async function toggleSort() {
+  if (running) {
+    cancelled = true;
+    running = false;
+    document.getElementById("btnStart").textContent = "▶ 開始排序";
+    document.getElementById("btnStart").classList.remove("running");
+    return;
+  }
+
+  cancelled = false;
+  running = true;
+  steps = 0;
+  document.getElementById("btnStart").textContent = "⏹ 停止";
+  document.getElementById("btnStart").classList.add("running");
+
+  const workArr = [...arr];
+  const gen = GENS[currentTab](workArr);
+
+  for (const frame of gen) {
+    if (cancelled) break;
+    displayArr = frame.array;
+    sortState = frame;
+    steps++;
+    document.getElementById("stepCount").textContent = `步驟 ${steps}`;
+    document.getElementById("stepCountCtrl").textContent = `步驟 ${steps}`;
+    renderBars();
+    const spd = document.getElementById("speedSlider").value;
+    await sleep(Math.max(5, 200 - spd * 1.8));
+  }
+
+  running = false;
+  document.getElementById("btnStart").textContent = "▶ 開始排序";
+  document.getElementById("btnStart").classList.remove("running");
+}
+
+// ═══ INIT ═══
+render();
+</script>
+</body>
+</html>
