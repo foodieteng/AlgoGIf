@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stack Sorting - 逐步解析</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Segoe UI', 'Noto Sans TC', system-ui, sans-serif;
+  background: #f1f5f9;
+  color: #1e293b;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 16px 10px;
+}
+
+.container {
+  max-width: 660px;
+  width: 100%;
+}
+
+.title {
+  text-align: center;
+  margin-bottom: 14px;
+}
+.title h2 {
+  font-size: 20px;
+  font-weight: 900;
+  margin: 0;
+}
+.title p {
+  font-size: 12px;
+  color: #64748b;
+  margin: 2px 0 0;
+}
+
+.presets {
+  display: flex;
+  gap: 5px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.preset-btn {
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  border: 2px solid #d1d5db;
+  background: #fff;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.preset-btn.active {
+  border-color: #2563eb;
+  background: #eff6ff;
+  font-weight: 800;
+  color: #1d4ed8;
+}
+
+.target-bar {
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  border: 1px solid #e2e8f0;
+}
+.target-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748b;
+  margin-bottom: 5px;
+}
+.target-cells {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+}
+.target-cell {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 800;
+  font-size: 14px;
+  position: relative;
+  background: #fff;
+  border: 2px solid #e5e7eb;
+  color: #374151;
+}
+.target-cell.done {
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #16a34a;
+}
+.target-cell.now {
+  background: #fef9c3;
+  border-color: #eab308;
+  color: #a16207;
+}
+.target-cell .idx-arrow {
+  position: absolute;
+  bottom: -13px;
+  font-size: 8px;
+  color: #eab308;
+  font-weight: 800;
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 7px;
+  margin-bottom: 10px;
+}
+.col {
+  border-radius: 10px;
+  padding: 8px 10px;
+  min-height: 170px;
+  display: flex;
+  flex-direction: column;
+}
+.col-title {
+  font-size: 10px;
+  font-weight: 800;
+  margin-bottom: 6px;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+.col-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 3px;
+}
+.col-empty {
+  font-size: 11px;
+}
+.col-top-label {
+  font-size: 9px;
+  color: #92400e;
+  margin-top: 1px;
+}
+
+.col-a { background: #f8fafc; border: 1.5px solid #e2e8f0; }
+.col-a .col-title { color: #475569; }
+.col-a .col-empty { color: #94a3b8; }
+
+.col-stack { background: #fffbeb; border: 1.5px solid #fde68a; }
+.col-stack .col-title { color: #92400e; }
+.col-stack .col-empty { color: #d97706; }
+
+.col-b { background: #f0fdf4; border: 1.5px solid #bbf7d0; }
+.col-b .col-title { color: #166534; }
+.col-b .col-empty { color: #86efac; }
+
+.car {
+  width: 40px;
+  height: 40px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 800;
+  font-size: 16px;
+  transition: all 0.2s ease;
+}
+.car-wait   { background: #e2e8f0; border: 2px solid #cbd5e1; color: #475569; }
+.car-normal { background: #dbeafe; border: 2px solid #93c5fd; color: #1e40af; }
+.car-top    { background: #2563eb; border: 2px solid #1d4ed8; color: #fff; box-shadow: 0 0 8px rgba(37,99,235,0.3); }
+.car-done   { background: #bbf7d0; border: 2px solid #86efac; color: #166534; }
+.car-pop    { background: #fbbf24; border: 2px solid #f59e0b; color: #78350f; box-shadow: 0 0 8px rgba(251,191,36,0.4); transform: scale(1.15); }
+
+.code-block {
+  background: #0f172a;
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  line-height: 1.85;
+}
+.code-line {
+  padding: 1px 6px;
+  border-radius: 3px;
+  color: #64748b;
+  font-weight: 400;
+}
+.code-line.active {
+  background: rgba(37,99,235,0.25);
+  color: #93c5fd;
+  font-weight: 700;
+}
+
+.desc-box {
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  font-size: 13.5px;
+  font-weight: 600;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  color: #334155;
+}
+.desc-box.success {
+  background: #f0fdf4;
+  border: 2px solid #16a34a;
+  color: #166534;
+}
+.desc-box.fail {
+  background: #fef2f2;
+  border: 2px solid #dc2626;
+  color: #991b1b;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.ctrl-btn {
+  padding: 7px 14px;
+  border-radius: 7px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1.5px solid #d1d5db;
+  background: #fff;
+  color: #374151;
+  transition: all 0.15s;
+}
+.ctrl-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+.ctrl-btn.primary {
+  border: none;
+  background: #2563eb;
+  color: #fff;
+}
+.ctrl-btn.danger {
+  border: none;
+  background: #dc2626;
+  color: #fff;
+}
+
+.step-counter {
+  text-align: center;
+  font-size: 10px;
+  color: #94a3b8;
+  margin-top: 5px;
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="title">
+    <h2>Stack Sorting 逐步解析</h2>
+    <p>看懂 canSort() 每一步在做什麼</p>
+  </div>
+
+  <div class="presets" id="presets"></div>
+
+  <div class="target-bar">
+    <div class="target-label" id="target-label"></div>
+    <div class="target-cells" id="target-cells"></div>
+  </div>
+
+  <div class="columns">
+    <div class="col col-a">
+      <div class="col-title">A 軌道 (等待)</div>
+      <div class="col-body" id="col-a"></div>
+    </div>
+    <div class="col col-stack">
+      <div class="col-title">Stack (車站)</div>
+      <div class="col-body" id="col-stack"></div>
+    </div>
+    <div class="col col-b">
+      <div class="col-title">B 軌道 (輸出)</div>
+      <div class="col-body" id="col-b"></div>
+    </div>
+  </div>
+
+  <div class="code-block" id="code-block"></div>
+  <div class="desc-box" id="desc-box"></div>
+
+  <div class="controls">
+    <button class="ctrl-btn" id="btn-reset">&#x23EE; 重置</button>
+    <button class="ctrl-btn" id="btn-prev">&#x25C0; 上一步</button>
+    <button class="ctrl-btn primary" id="btn-play">&#x25B6; 播放</button>
+    <button class="ctrl-btn" id="btn-next">下一步 &#x25B6;</button>
+  </div>
+  <div class="step-counter" id="step-counter"></div>
+</div>
+
+<script>
+const PRESETS = [
+  { label: "[1,2,3,4,5] Yes", target: [1, 2, 3, 4, 5] },
+  { label: "[5,4,3,2,1] Yes", target: [5, 4, 3, 2, 1] },
+  { label: "[5,4,1,2,3] No",  target: [5, 4, 1, 2, 3] },
+  { label: "[3,2,1,4,5] Yes", target: [3, 2, 1, 4, 5] },
+];
+
+const CODE = [
+  "bool canSort(target) {",
+  "  stack<int> st; int idx = 0;",
+  "  for (i = 1..n) {",
+  "    st.push(i);",
+  "    while (st.top() == target[idx])",
+  "      { st.pop(); idx++; }",
+  "  }",
+  "  return idx == n;",
+  "}",
+];
+
+function runSim(target) {
+  const n = target.length;
+  const steps = [];
+  const stack = [];
+  let idx = 0;
+  const out = [];
+
+  const snap = (extra) => ({
+    stack: [...stack], out: [...out], idx,
+    nextPush: extra.np || 1, ...extra,
+  });
+
+  steps.push(snap({ type: "init", np: 1,
+    desc: `初始：車廂 1~${n} 在 A 軌道，目標 B = [${target.join(", ")}]`, hl: -1 }));
+
+  for (let i = 1; i <= n; i++) {
+    stack.push(i);
+    steps.push(snap({ type: "push", np: i + 1,
+      desc: `st.push(${i}) — 車廂 ${i} 進入 Stack`, hl: 2 }));
+
+    while (stack.length > 0 && stack[stack.length - 1] === target[idx]) {
+      const top = stack[stack.length - 1];
+      steps.push(snap({ type: "match", np: i + 1, popCar: top,
+        desc: `✓ top=${top} == target[${idx}]=${target[idx]} → pop 送去 B`, hl: 3 }));
+      stack.pop();
+      out.push(top);
+      idx++;
+      steps.push(snap({ type: "popped", np: i + 1,
+        desc: `車廂 ${top} 已到 B，idx → ${idx}`, hl: 4 }));
+    }
+
+    if (stack.length > 0 && idx < n && stack[stack.length - 1] !== target[idx]) {
+      steps.push(snap({ type: "nomatch", np: i + 1,
+        desc: `✗ top=${stack[stack.length - 1]} ≠ target[${idx}]=${target[idx]}，不能 pop`, hl: 3 }));
+    }
+  }
+
+  const ok = idx === n;
+  steps.push(snap({ type: "result", np: n + 1, success: ok,
+    desc: ok ? `✅ idx=${idx} == N=${n} → 全部輸出，Yes！` : `❌ idx=${idx} ≠ N=${n} → 出不來，No`,
+    hl: 5 }));
+  return steps;
+}
+
+function hlRows(hl) {
+  if (hl === 2) return new Set([2, 3]);
+  if (hl === 3) return new Set([4]);
+  if (hl === 4) return new Set([5]);
+  if (hl === 5) return new Set([7]);
+  return new Set();
+}
+
+// --- State ---
+let currentPreset = 0;
+let currentStep = 0;
+let playing = false;
+let timer = null;
+let allSteps = [];
+
+function init() {
+  renderPresets();
+  loadPreset(0);
+  document.getElementById("btn-reset").onclick = () => { currentStep = 0; stopPlay(); render(); };
+  document.getElementById("btn-prev").onclick = () => { currentStep = Math.max(0, currentStep - 1); render(); };
+  document.getElementById("btn-next").onclick = () => { currentStep = Math.min(allSteps.length - 1, currentStep + 1); render(); };
+  document.getElementById("btn-play").onclick = togglePlay;
+  renderCode();
+}
+
+function renderPresets() {
+  const el = document.getElementById("presets");
+  el.innerHTML = "";
+  PRESETS.forEach((p, i) => {
+    const btn = document.createElement("button");
+    btn.className = "preset-btn" + (i === currentPreset ? " active" : "");
+    btn.textContent = p.label;
+    btn.onclick = () => loadPreset(i);
+    el.appendChild(btn);
+  });
+}
+
+function loadPreset(i) {
+  currentPreset = i;
+  currentStep = 0;
+  stopPlay();
+  allSteps = runSim(PRESETS[i].target);
+  renderPresets();
+  render();
+}
+
+function togglePlay() {
+  if (playing) { stopPlay(); }
+  else { startPlay(); }
+  render();
+}
+
+function startPlay() {
+  playing = true;
+  timer = setInterval(() => {
+    if (currentStep >= allSteps.length - 1) { stopPlay(); render(); return; }
+    currentStep++;
+    render();
+  }, 950);
+}
+
+function stopPlay() {
+  playing = false;
+  clearInterval(timer);
+  timer = null;
+}
+
+function carHTML(num, variant) {
+  return `<div class="car car-${variant}">${num}</div>`;
+}
+
+function render() {
+  const target = PRESETS[currentPreset].target;
+  const n = target.length;
+  const cur = allSteps[currentStep];
+  if (!cur) return;
+
+  // target bar
+  document.getElementById("target-label").innerHTML = `target[] &nbsp;|&nbsp; idx = ${cur.idx}`;
+  const cellsEl = document.getElementById("target-cells");
+  cellsEl.innerHTML = "";
+  target.forEach((v, i) => {
+    const done = i < cur.idx;
+    const now = i === cur.idx;
+    const cls = "target-cell" + (done ? " done" : "") + (now ? " now" : "");
+    const arrow = now ? `<span class="idx-arrow">▲idx</span>` : "";
+    cellsEl.innerHTML += `<div class="${cls}">${v}${arrow}</div>`;
+  });
+
+  // rail A
+  const colA = document.getElementById("col-a");
+  const railA = [];
+  for (let i = n; i >= cur.nextPush; i--) railA.push(i);
+  colA.innerHTML = railA.length === 0
+    ? `<span class="col-empty">空了</span>`
+    : railA.map(v => carHTML(v, "wait")).join("");
+
+  // stack
+  const colStack = document.getElementById("col-stack");
+  let stackHTML = "";
+  if (cur.stack.length === 0) {
+    stackHTML = `<span class="col-empty">空的</span>`;
+  } else {
+    cur.stack.forEach((v, i) => {
+      let variant = "normal";
+      if (cur.popCar === v) variant = "pop";
+      else if (i === cur.stack.length - 1) variant = "top";
+      stackHTML += carHTML(v, variant);
+    });
+    stackHTML += `<div class="col-top-label">↑ top</div>`;
+  }
+  colStack.innerHTML = stackHTML;
+
+  // rail B
+  const colB = document.getElementById("col-b");
+  colB.innerHTML = cur.out.length === 0
+    ? `<span class="col-empty">等待中</span>`
+    : cur.out.map(v => carHTML(v, "done")).join("");
+
+  // code highlight
+  const active = hlRows(cur.hl);
+  const codeEl = document.getElementById("code-block");
+  codeEl.innerHTML = CODE.map((line, i) =>
+    `<div class="code-line${active.has(i) ? " active" : ""}">${escapeHtml(line)}</div>`
+  ).join("");
+
+  // description
+  const descEl = document.getElementById("desc-box");
+  descEl.className = "desc-box";
+  if (cur.type === "result") descEl.classList.add(cur.success ? "success" : "fail");
+  descEl.textContent = cur.desc;
+
+  // controls
+  document.getElementById("btn-prev").disabled = currentStep === 0;
+  document.getElementById("btn-next").disabled = currentStep >= allSteps.length - 1;
+  const playBtn = document.getElementById("btn-play");
+  playBtn.className = playing ? "ctrl-btn danger" : "ctrl-btn primary";
+  playBtn.innerHTML = playing ? "&#x23F8; 暫停" : "&#x25B6; 播放";
+
+  // counter
+  document.getElementById("step-counter").textContent = `${currentStep + 1} / ${allSteps.length}`;
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+init();
+</script>
+</body>
+</html>
