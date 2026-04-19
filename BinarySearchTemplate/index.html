@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Binary Search — C++ 二分搜尋完整筆記</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0e14;--bg2:#0f1319;--surface:#151a23;--surface2:#1a2030;
+    --border:#252d3a;--border-bright:#3a4560;
+    --text:#c8d0dc;--text-dim:#6b7a90;--text-bright:#e8edf5;
+    --accent:#59c2ff;--accent-dim:#1a3a55;
+    --green:#7fd962;--green-dim:#1a3520;
+    --orange:#ffb454;--orange-dim:#3a2a15;
+    --red:#ff6b6b;--red-dim:#3a1a1a;
+    --purple:#c792ea;--purple-dim:#2a1a3a;
+    --yellow:#ffd580;--cyan:#95e6cb;--pink:#f07178;
+    --radius:10px;--shadow:0 4px 24px rgba(0,0,0,.4);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'DM Sans','Noto Sans TC',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;min-height:100vh;}
+  body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;}
+  .app{max-width:1060px;margin:0 auto;padding:40px 22px 100px;}
+
+  /* Header */
+  header{text-align:center;margin-bottom:36px;}
+  header .eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--accent);margin-bottom:10px;}
+  header h1{font-family:'Instrument Serif',serif;font-size:clamp(28px,4.5vw,44px);font-weight:400;color:var(--text-bright);line-height:1.2;margin-bottom:10px;}
+  header h1 em{font-style:italic;color:var(--yellow);}
+  header .subtitle{font-size:14px;color:var(--text-dim);max-width:640px;margin:0 auto;}
+
+  /* Section */
+  section{margin-bottom:36px;scroll-margin-top:20px;}
+  .sec-title{font-family:'Instrument Serif',serif;font-size:26px;color:var(--text-bright);margin-bottom:14px;display:flex;align-items:baseline;gap:12px;}
+  .sec-title .num{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent);background:var(--accent-dim);padding:4px 10px;border-radius:6px;letter-spacing:1px;}
+  .sec-sub{font-size:13.5px;color:var(--text-dim);margin-bottom:18px;}
+
+  /* Card */
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow);margin-bottom:16px;}
+  .card-title{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+  .card-title .dot{width:7px;height:7px;border-radius:50%;}
+
+  /* TF array */
+  .tf-row{display:flex;justify-content:center;flex-wrap:wrap;gap:4px;margin:14px 0 30px;}
+  .tf-cell{
+    font-family:'JetBrains Mono',monospace;font-weight:700;
+    min-width:44px;height:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    border-radius:8px;position:relative;
+  }
+  .tf-cell .v{font-size:15px;}
+  .tf-cell .i{position:absolute;bottom:-18px;font-size:10px;color:var(--text-dim);font-weight:500;white-space:nowrap;}
+  .tf-F{background:var(--red-dim);border:1px solid var(--red);color:var(--red);}
+  .tf-T{background:var(--green-dim);border:1px solid var(--green);color:var(--green);}
+  .tf-boundary{box-shadow:0 0 0 2px var(--yellow),0 0 16px rgba(255,213,128,.35);}
+  .tf-legend{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--text-dim);text-align:center;margin-top:8px;}
+  .tf-legend .arrow{color:var(--yellow);font-weight:700;}
+
+  /* Code block */
+  pre{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px 16px;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.65;color:var(--text);margin:10px 0;}
+  pre .kw{color:var(--purple);}
+  pre .fn{color:var(--accent);}
+  pre .num{color:var(--orange);}
+  pre .str{color:var(--green);}
+  pre .cm{color:var(--text-dim);font-style:italic;}
+  pre .op{color:var(--yellow);}
+  pre .ty{color:var(--cyan);}
+
+  code.inline{font-family:'JetBrains Mono',monospace;background:var(--surface2);padding:2px 7px;border-radius:5px;font-size:12px;color:var(--orange);border:1px solid var(--border);}
+
+  /* Grid */
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media(max-width:780px){.two-col{grid-template-columns:1fr;}}
+
+  /* Table */
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:4px;}
+  th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);vertical-align:top;}
+  th{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);font-weight:600;background:var(--bg2);}
+  td.mono{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--orange);}
+  tr:last-child td{border-bottom:none;}
+
+  /* Pills */
+  .pill{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:11px;padding:3px 9px;border-radius:5px;font-weight:600;margin-right:4px;}
+  .pill.blue{background:var(--accent-dim);color:var(--accent);border:1px solid var(--accent);}
+  .pill.green{background:var(--green-dim);color:var(--green);border:1px solid var(--green);}
+  .pill.orange{background:var(--orange-dim);color:var(--orange);border:1px solid var(--orange);}
+  .pill.red{background:var(--red-dim);color:var(--red);border:1px solid var(--red);}
+  .pill.purple{background:var(--purple-dim);color:var(--purple);border:1px solid var(--purple);}
+
+  /* Callout */
+  .callout{background:var(--surface2);border-left:3px solid var(--accent);padding:12px 16px;border-radius:6px;margin:14px 0;font-size:13px;}
+  .callout.warn{border-left-color:var(--orange);}
+  .callout.good{border-left-color:var(--green);}
+  .callout.bad{border-left-color:var(--red);}
+  .callout b{color:var(--text-bright);}
+
+  /* Key/value */
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:13px;margin:10px 0;}
+  .kv .k{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--accent);font-weight:600;}
+  .kv .v{color:var(--text);}
+
+  .hl{color:var(--accent);font-weight:600;}
+  .grn{color:var(--green);font-weight:600;}
+  .org{color:var(--orange);font-weight:600;}
+  .red{color:var(--red);font-weight:600;}
+  .ylw{color:var(--yellow);font-weight:600;}
+  .pur{color:var(--purple);font-weight:600;}
+  .dim{color:var(--text-dim);}
+
+  ul,ol{padding-left:22px;}
+  li{margin-bottom:6px;font-size:13.5px;}
+
+  /* Nav */
+  .toc{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 22px;margin-bottom:36px;}
+  .toc-title{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px;}
+  .toc ol{padding-left:22px;columns:2;column-gap:30px;}
+  .toc ol li{font-size:13px;margin-bottom:4px;break-inside:avoid;}
+  .toc a{color:var(--text);text-decoration:none;border-bottom:1px dashed var(--border);}
+  .toc a:hover{color:var(--accent);border-color:var(--accent);}
+  @media(max-width:680px){.toc ol{columns:1;}}
+
+  .lang-tag{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;background:var(--purple-dim);color:var(--purple);border:1px solid var(--purple);letter-spacing:1px;margin-left:8px;vertical-align:middle;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="eyebrow">Binary Search · C++ Notes</div>
+    <h1>C++ <em>二分搜尋</em> 完整筆記</h1>
+    <p class="subtitle">從 <span class="grn">TF 陣列思維</span> 到 <span class="hl">std::lower_bound / upper_bound</span> 與 <span class="ylw">set / multiset / map</span> 實戰，一份筆記全部搞定。</p>
+  </header>
+
+  <div class="toc">
+    <div class="toc-title">目錄</div>
+    <ol>
+      <li><a href="#core">核心：TF 陣列思維</a></li>
+      <li><a href="#template">l &lt; r 標準模板</a></li>
+      <li><a href="#lower">lower_bound 原理</a></li>
+      <li><a href="#upper">upper_bound 原理</a></li>
+      <li><a href="#returnl">return l vs l - 1</a></li>
+      <li><a href="#mid">mid 偏左 vs 偏右</a></li>
+      <li><a href="#stl-func">STL：std::lower_bound / upper_bound</a></li>
+      <li><a href="#stl-set">STL：set / multiset</a></li>
+      <li><a href="#stl-map">STL：map</a></li>
+      <li><a href="#patterns">實戰題型</a></li>
+      <li><a href="#cheatsheet">Cheat Sheet 總表</a></li>
+    </ol>
+  </div>
+
+  <!-- 1 -->
+  <section id="core">
+    <h2 class="sec-title"><span class="num">01</span>核心：TF 陣列思維</h2>
+    <p class="sec-sub">把 <code class="inline">check(mid)</code> 的結果想成布林陣列。二分搜尋就是在找 <span class="ylw">FFFTTTT 的交界</span>。</p>
+
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--yellow)"></span>範例：找第一個 ≥ 5 的位置</div>
+      <p style="font-size:13.5px;"><code class="inline">nums = [1, 3, 5, 5, 7, 9]</code>，<code class="inline">check(i) = nums[i] &gt;= 5</code></p>
+
+      <div class="tf-row">
+        <div class="tf-cell tf-F"><span class="v">F</span><span class="i">0·1</span></div>
+        <div class="tf-cell tf-F"><span class="v">F</span><span class="i">1·3</span></div>
+        <div class="tf-cell tf-T tf-boundary"><span class="v">T</span><span class="i">2·5</span></div>
+        <div class="tf-cell tf-T"><span class="v">T</span><span class="i">3·5</span></div>
+        <div class="tf-cell tf-T"><span class="v">T</span><span class="i">4·7</span></div>
+        <div class="tf-cell tf-T"><span class="v">T</span><span class="i">5·9</span></div>
+      </div>
+      <div class="tf-legend"><span class="arrow">▲ 目標</span> = 第一個 T 的 index = <span class="ylw">2</span></div>
+
+      <div class="callout good">
+        <b>只要讓陣列是單調的 <span class="red">F…F</span><span class="grn">T…T</span>，二分就能用。</b>這條界線就是 <span class="ylw">boundary</span>，演算法用 log n 次逼近它。
+      </div>
+    </div>
+  </section>
+
+  <!-- 2 -->
+  <section id="template">
+    <h2 class="sec-title"><span class="num">02</span>l &lt; r 標準模板</h2>
+    <p class="sec-sub">最不容易寫錯的版本。終止時 <code class="inline">l == r</code>，同時指向 boundary。</p>
+
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--accent)"></span>C++ 模板：找第一個 T</div>
+<pre><span class="kw">int</span> <span class="fn">binarySearch</span>(vector&lt;<span class="kw">int</span>&gt;&amp; nums, <span class="kw">auto</span> check) {
+    <span class="kw">int</span> l = <span class="num">0</span>, r = nums.<span class="fn">size</span>();        <span class="cm">// r = n，不是 n-1</span>
+    <span class="kw">while</span> (l &lt; r) {
+        <span class="kw">int</span> mid = l + (r - l) / <span class="num">2</span>;       <span class="cm">// 偏左，避免溢位</span>
+        <span class="kw">if</span> (<span class="fn">check</span>(mid)) r = mid;             <span class="cm">// T：答案可能是 mid 或更左</span>
+        <span class="kw">else</span>             l = mid + <span class="num">1</span>;         <span class="cm">// F：答案一定在右邊</span>
+    }
+    <span class="kw">return</span> l;                              <span class="cm">// 第一個 T 的位置</span>
+}</pre>
+
+      <div class="kv">
+        <div class="k">不變量</div><div class="v"><code class="inline">[0, l)</code> 全 F，<code class="inline">[r, n)</code> 全 T</div>
+        <div class="k">終止</div><div class="v"><code class="inline">l == r</code> 就是第一個 T 的位置</div>
+        <div class="k">無 T</div><div class="v">回傳 <code class="inline">n</code>（l 一路推到 n）</div>
+        <div class="k">全 T</div><div class="v">回傳 <code class="inline">0</code></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 -->
+  <section id="lower">
+    <h2 class="sec-title"><span class="num">03</span>lower_bound — 第一個 ≥ x</h2>
+    <p class="sec-sub">對應 <code class="inline">std::lower_bound</code>。<code class="inline">check(i) = nums[i] &gt;= x</code></p>
+
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--green)"></span>nums = [1, 3, 5, 5, 7, 9]，x = 5</div>
+      <div class="tf-row">
+        <div class="tf-cell tf-F"><span class="v">F</span><span class="i">1</span></div>
+        <div class="tf-cell tf-F"><span class="v">F</span><span class="i">3</span></div>
+        <div class="tf-cell tf-T tf-boundary"><span class="v">T</span><span class="i">5</span></div>
+        <div class="tf-cell tf-T"><span class="v">T</span><span class="i">5</span></div>
+        <div class="tf-cell tf-T"><span class="v">T</span><span class="i">7</span></div>
+        <div class="tf-cell tf-T"><span class="v">T</span><span class="i">9</span></div>
+      </div>
+      <div class="tf-legend">lower_bound(5) = <span class="ylw">index 2</span>（第一個 5）</div>
+
+<pre style="margin-top:22px;"><span class="kw">int</span> <span class="fn">lowerBound</span>(vector&lt;<span class="kw">int</span>&gt;&amp; nums, <span class="kw">int</span> x) {
+    <span class="kw">int</span> l = <span class="num">0</span>, r = nums.<span class="fn">size</span>();
+    <span class="kw">while</span> (l &lt; r) {
+        <span class="kw">int</span> mid = l + (r - l) / <span class="num">2</span>;
+        <span class="kw">if</span> (nums[mid] &gt;= x) r = mid;   <span class="cm">// T</span>
+        <span class="kw">else</span>                   l = mid + <span class="num">1</span>; <span class="cm">// F</span>
+    }
+    <span class="kw">return</span> l;
+}</pre>
+    </div>
+  </section>
+
+  <!-- 4 -->
+  <section id="upper">
+    <h2 class="sec-title"><span class="num">04</span>upper_bound — 第一個 &gt; x</h2>
+    <p class="sec-sub">對應 <code class="inline">std::upper_bound</code>。<code class="inline">check(i) = nums[i] &gt; x</code></p>
+
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--orange)"></span>nums = [1, 3, 5, 5, 7, 9]，x = 5</div>
+      <div class="tf-row">
+        <div class="tf-cell tf-F"><span class="v">F</span><span class="i">1</span></div>
+        <div class="tf-cell tf-F"><span class="v">F</span><span class="i">3</span></div>
+        <div class="tf-cell tf-F"><span class="v">F</span><span class="i">5</span></div>
+        <div class="tf-cell tf-F"><span class="v">F</span><span class="i">5</span></div>
+        <div class="tf-cell tf-T tf-boundary"><span class="v">T</span><span class="i">7</span></div>
+        <div class="tf-cell tf-T"><span class="v">T</span><span class="i">9</span></div>
+      </div>
+      <div class="tf-legend">upper_bound(5) = <span class="ylw">index 4</span>（5 之後第一個）</div>
+
+<pre style="margin-top:22px;"><span class="kw">int</span> <span class="fn">upperBound</span>(vector&lt;<span class="kw">int</span>&gt;&amp; nums, <span class="kw">int</span> x) {
+    <span class="kw">int</span> l = <span class="num">0</span>, r = nums.<span class="fn">size</span>();
+    <span class="kw">while</span> (l &lt; r) {
+        <span class="kw">int</span> mid = l + (r - l) / <span class="num">2</span>;
+        <span class="kw">if</span> (nums[mid] &gt; x) r = mid;    <span class="cm">// T</span>
+        <span class="kw">else</span>                  l = mid + <span class="num">1</span>; <span class="cm">// F</span>
+    }
+    <span class="kw">return</span> l;
+}</pre>
+
+      <div class="callout good">
+        <b>記憶訣竅：</b>
+        <span class="pill green">lower</span> 用 <code class="inline">&gt;=</code>，找<span class="grn">起點</span>
+        <span class="pill orange">upper</span> 用 <code class="inline">&gt;</code>，找<span class="org">終點 + 1</span>
+      </div>
+
+      <div class="callout">
+        <b>常用公式：</b><br>
+        · x 的出現次數 = <code class="inline">upper_bound(x) - lower_bound(x)</code><br>
+        · x 最後一個位置 = <code class="inline">upper_bound(x) - 1</code><br>
+        · x 是否存在 = <code class="inline">lower_bound(x) != nums.end() &amp;&amp; *it == x</code>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 -->
+  <section id="returnl">
+    <h2 class="sec-title"><span class="num">05</span>return <em>l</em> vs <em>l - 1</em></h2>
+    <p class="sec-sub">模板結束後 <code class="inline">l</code> 指向第一個 T。題目要「最後一個 F」時用 <code class="inline">l - 1</code>。</p>
+
+    <div class="card">
+      <div class="tf-row">
+        <div class="tf-cell tf-F"><span class="v">F</span><span class="i">0</span></div>
+        <div class="tf-cell tf-F"><span class="v">F</span><span class="i">1</span></div>
+        <div class="tf-cell tf-F" style="box-shadow:0 0 0 2px var(--orange),0 0 16px rgba(255,180,84,.35);"><span class="v">F</span><span class="i">2</span></div>
+        <div class="tf-cell tf-T" style="box-shadow:0 0 0 2px var(--green),0 0 16px rgba(127,217,98,.35);"><span class="v">T</span><span class="i">3</span></div>
+        <div class="tf-cell tf-T"><span class="v">T</span><span class="i">4</span></div>
+        <div class="tf-cell tf-T"><span class="v">T</span><span class="i">5</span></div>
+      </div>
+      <div class="tf-legend">
+        <span class="org">◀ 最後一個 F = l - 1 = 2</span> &nbsp;|&nbsp;
+        <span class="grn">第一個 T = l = 3 ▶</span>
+      </div>
+
+      <table style="margin-top:24px;">
+        <thead><tr><th>題目要</th><th>回傳</th><th>邊界</th></tr></thead>
+        <tbody>
+          <tr><td>第一個滿足的 index</td><td class="mono">l</td><td>無 T 時 l = n</td></tr>
+          <tr><td>最後一個不滿足的 index</td><td class="mono">l - 1</td><td>全 T 時 l - 1 = -1</td></tr>
+          <tr><td>插入位置（保持排序）</td><td class="mono">l</td><td>等同 lower_bound</td></tr>
+          <tr><td>最大可行解（TTTFFF）</td><td class="mono">l - 1</td><td>check 用 <code class="inline">!feasible</code></td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout warn">
+        <b>踩雷：</b>像 Koko 吃香蕉、切木頭這種「找最大的 x 使 f(x) 成立」→ 陣列是 <span class="ylw">TTTTFFFF</span>。<br>
+        解法：check 反向成 <code class="inline">!f(mid)</code>，return <code class="inline">l - 1</code>。
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 -->
+  <section id="mid">
+    <h2 class="sec-title"><span class="num">06</span>mid 偏左 vs 偏右</h2>
+    <p class="sec-sub"><code class="inline">l &lt; r</code> 模板唯一陷阱：何時要 <code class="inline">+1</code>。</p>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--accent)"></span>偏左 mid（標準）</div>
+<pre><span class="kw">int</span> mid = l + (r - l) / <span class="num">2</span>;
+<span class="kw">if</span> (check(mid)) r = mid;
+<span class="kw">else</span>            l = mid + <span class="num">1</span>;</pre>
+        <div class="kv" style="margin-top:10px;">
+          <div class="k">找</div><div class="v">第一個 T</div>
+          <div class="k">形狀</div><div class="v"><span class="red">FFF</span><span class="grn">TTT</span></div>
+          <div class="k">回傳</div><div class="v"><code class="inline">l</code></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--orange)"></span>偏右 mid</div>
+<pre><span class="kw">int</span> mid = l + (r - l + <span class="num">1</span>) / <span class="num">2</span>;
+<span class="kw">if</span> (check(mid)) l = mid;
+<span class="kw">else</span>            r = mid - <span class="num">1</span>;</pre>
+        <div class="kv" style="margin-top:10px;">
+          <div class="k">找</div><div class="v">最後一個 T</div>
+          <div class="k">形狀</div><div class="v"><span class="grn">TTT</span><span class="red">FFF</span></div>
+          <div class="k">回傳</div><div class="v"><code class="inline">l</code></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout bad">
+      <b>為什麼要 +1？</b>當 <code class="inline">r = l + 1</code>，偏左 mid 會等於 l，<code class="inline">l = mid</code> 時 l 不前進 → 死迴圈。<br>
+      <b>口訣：</b><code class="inline">l = mid</code> 配 <code class="inline">+1</code>，<code class="inline">r = mid</code> 不加。
+    </div>
+  </section>
+
+  <!-- 7 -->
+  <section id="stl-func">
+    <h2 class="sec-title"><span class="num">07</span>STL：std::lower_bound / upper_bound <span class="lang-tag">C++</span></h2>
+    <p class="sec-sub">內建於 <code class="inline">&lt;algorithm&gt;</code>，用在已排序的 <span class="hl">vector / array</span>。回傳 <span class="hl">iterator</span>。</p>
+
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--accent)"></span>基本用法</div>
+<pre><span class="cm">#include &lt;algorithm&gt;</span>
+vector&lt;<span class="kw">int</span>&gt; v = {<span class="num">1</span>, <span class="num">3</span>, <span class="num">5</span>, <span class="num">5</span>, <span class="num">7</span>, <span class="num">9</span>};
+
+<span class="kw">auto</span> it1 = <span class="fn">lower_bound</span>(v.<span class="fn">begin</span>(), v.<span class="fn">end</span>(), <span class="num">5</span>);  <span class="cm">// → v[2]</span>
+<span class="kw">auto</span> it2 = <span class="fn">upper_bound</span>(v.<span class="fn">begin</span>(), v.<span class="fn">end</span>(), <span class="num">5</span>);  <span class="cm">// → v[4]</span>
+
+<span class="kw">int</span> idx = it1 - v.<span class="fn">begin</span>();                        <span class="cm">// iterator → index</span>
+<span class="kw">int</span> cnt = <span class="fn">upper_bound</span>(v.<span class="fn">begin</span>(), v.<span class="fn">end</span>(), <span class="num">5</span>)
+        - <span class="fn">lower_bound</span>(v.<span class="fn">begin</span>(), v.<span class="fn">end</span>(), <span class="num">5</span>);    <span class="cm">// 5 出現 2 次</span>
+
+<span class="cm">// 一次拿到 [lower, upper)</span>
+<span class="kw">auto</span> [lo, hi] = <span class="fn">equal_range</span>(v.<span class="fn">begin</span>(), v.<span class="fn">end</span>(), <span class="num">5</span>);</pre>
+
+      <div class="callout">
+        <b>檢查是否存在：</b>
+<pre style="margin-top:8px;"><span class="kw">auto</span> it = <span class="fn">lower_bound</span>(v.<span class="fn">begin</span>(), v.<span class="fn">end</span>(), x);
+<span class="kw">if</span> (it != v.<span class="fn">end</span>() &amp;&amp; *it == x) { <span class="cm">/* 找到 */</span> }</pre>
+      </div>
+
+      <div class="callout warn">
+        <b>自訂比較函式（降冪陣列）：</b>
+<pre style="margin-top:8px;"><span class="kw">auto</span> it = <span class="fn">lower_bound</span>(v.<span class="fn">begin</span>(), v.<span class="fn">end</span>(), x, greater&lt;<span class="kw">int</span>&gt;());
+<span class="cm">// 第一個 &lt;= x 的位置（因為比較反了）</span></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 -->
+  <section id="stl-set">
+    <h2 class="sec-title"><span class="num">08</span>STL：set / multiset <span class="lang-tag">C++</span></h2>
+    <p class="sec-sub">紅黑樹，<span class="hl">一律用成員函式</span>。</p>
+
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--red)"></span>最重要的地雷：兩種 lower_bound 的差異</div>
+
+      <table>
+        <thead><tr><th>寫法</th><th>複雜度</th><th>評價</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">s.lower_bound(x)</td><td class="mono">O(log n)</td><td><span class="grn">✓ 正確</span></td></tr>
+          <tr><td class="mono" style="color:var(--red);">std::lower_bound(s.begin(), s.end(), x)</td><td class="mono" style="color:var(--red);">O(n)</td><td><span class="red">✗ 會編譯過，但退化</span></td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout bad">
+        set iterator 不是 random access，<code class="inline">std::lower_bound</code> 會走成線性。<br>
+        <b>對 set / multiset / map 一律用成員版：</b><code class="inline">s.lower_bound(x)</code>。
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--green)"></span>四神獸：找最接近 x 的元素</div>
+
+<pre>set&lt;<span class="kw">int</span>&gt; s = {<span class="num">10</span>, <span class="num">20</span>, <span class="num">30</span>, <span class="num">40</span>, <span class="num">50</span>};
+
+<span class="cm">// ① 最小 &gt;= x  （後繼，含相等）</span>
+<span class="kw">auto</span> it = s.<span class="fn">lower_bound</span>(x);
+<span class="kw">if</span> (it != s.<span class="fn">end</span>()) cout &lt;&lt; *it;
+
+<span class="cm">// ② 最小 &gt;  x  （嚴格後繼）</span>
+<span class="kw">auto</span> it = s.<span class="fn">upper_bound</span>(x);
+<span class="kw">if</span> (it != s.<span class="fn">end</span>()) cout &lt;&lt; *it;
+
+<span class="cm">// ③ 最大 &lt;= x  （前驅，含相等）</span>
+<span class="kw">auto</span> it = s.<span class="fn">upper_bound</span>(x);
+<span class="kw">if</span> (it != s.<span class="fn">begin</span>()) { --it; cout &lt;&lt; *it; }
+
+<span class="cm">// ④ 最大 &lt;  x  （嚴格前驅）</span>
+<span class="kw">auto</span> it = s.<span class="fn">lower_bound</span>(x);
+<span class="kw">if</span> (it != s.<span class="fn">begin</span>()) { --it; cout &lt;&lt; *it; }</pre>
+
+      <div class="callout good">
+        <b>口訣：</b><br>
+        · 想要「≥ / &gt;」用原版<br>
+        · 想要「≤ / &lt;」先拿「&gt; / ≥」再 <code class="inline">--it</code>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--orange)"></span>multiset：erase 與計數</div>
+
+<pre>multiset&lt;<span class="kw">int</span>&gt; ms = {<span class="num">1</span>, <span class="num">2</span>, <span class="num">2</span>, <span class="num">2</span>, <span class="num">3</span>};
+
+ms.<span class="fn">erase</span>(<span class="num">2</span>);                   <span class="cm">// ❌ 刪掉全部的 2</span>
+
+<span class="kw">auto</span> it = ms.<span class="fn">find</span>(<span class="num">2</span>);          <span class="cm">// ✅ 只刪一個</span>
+<span class="kw">if</span> (it != ms.<span class="fn">end</span>()) ms.<span class="fn">erase</span>(it);
+
+<span class="kw">int</span> cnt = ms.<span class="fn">count</span>(<span class="num">2</span>);           <span class="cm">// x 出現次數</span>
+
+<span class="kw">auto</span> [lo, hi] = ms.<span class="fn">equal_range</span>(<span class="num">2</span>); <span class="cm">// [lower_bound, upper_bound)</span></pre>
+
+      <div class="callout warn">
+        <b>unordered_set / unordered_map 沒有 lower_bound！</b>hash table 沒有順序。要二分一定用有序版 set / map。
+      </div>
+    </div>
+  </section>
+
+  <!-- 9 -->
+  <section id="stl-map">
+    <h2 class="sec-title"><span class="num">09</span>STL：map <span class="lang-tag">C++</span></h2>
+    <p class="sec-sub">依 key 排序，二分只對 <span class="hl">key</span> 操作。</p>
+
+    <div class="card">
+<pre>map&lt;<span class="kw">int</span>, string&gt; m = {{<span class="num">1</span>,<span class="str">"a"</span>}, {<span class="num">3</span>,<span class="str">"c"</span>}, {<span class="num">5</span>,<span class="str">"e"</span>}};
+
+<span class="kw">auto</span> it = m.<span class="fn">lower_bound</span>(<span class="num">3</span>);   <span class="cm">// 第一個 key &gt;= 3 → {3, "c"}</span>
+<span class="kw">auto</span> it2 = m.<span class="fn">upper_bound</span>(<span class="num">3</span>);  <span class="cm">// 第一個 key &gt;  3 → {5, "e"}</span>
+
+<span class="kw">if</span> (it != m.<span class="fn">end</span>())
+    cout &lt;&lt; it-&gt;first &lt;&lt; <span class="str">" = "</span> &lt;&lt; it-&gt;second;</pre>
+
+      <table style="margin-top:14px;">
+        <thead><tr><th>容器</th><th>特性</th><th>二分支援</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">set</td><td>唯一、有序</td><td class="mono">✓ 成員版</td></tr>
+          <tr><td class="mono">multiset</td><td>允許重複、有序</td><td class="mono">✓ 成員版</td></tr>
+          <tr><td class="mono">map</td><td>key-value、依 key 有序</td><td class="mono">✓ 成員版</td></tr>
+          <tr><td class="mono">unordered_set</td><td>hash、無序</td><td style="color:var(--red);">✗</td></tr>
+          <tr><td class="mono">unordered_map</td><td>hash、無序</td><td style="color:var(--red);">✗</td></tr>
+          <tr><td class="mono">vector（已排序）</td><td>隨機存取</td><td class="mono">✓ std:: 函式版</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 10 -->
+  <section id="patterns">
+    <h2 class="sec-title"><span class="num">10</span>實戰題型</h2>
+
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--yellow)"></span>① 動態前驅 / 後繼查詢</div>
+      <p style="font-size:13.5px;">串流資料邊插入邊查詢「最接近 x」。</p>
+<pre>multiset&lt;<span class="kw">int</span>&gt; ms;
+ms.<span class="fn">insert</span>(x);
+
+<span class="kw">auto</span> it = ms.<span class="fn">lower_bound</span>(x);            <span class="cm">// 後繼</span>
+<span class="kw">if</span> (it != ms.<span class="fn">begin</span>()) {
+    <span class="kw">auto</span> prev = <span class="fn">prev</span>(it);               <span class="cm">// 前驅</span>
+}</pre>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--cyan)"></span>② LIS 最長遞增子序列 O(n log n)</div>
+<pre>vector&lt;<span class="kw">int</span>&gt; tails;
+<span class="kw">for</span> (<span class="kw">int</span> x : nums) {
+    <span class="kw">auto</span> it = <span class="fn">lower_bound</span>(tails.<span class="fn">begin</span>(), tails.<span class="fn">end</span>(), x);
+    <span class="kw">if</span> (it == tails.<span class="fn">end</span>()) tails.<span class="fn">push_back</span>(x);
+    <span class="kw">else</span>                    *it = x;
+}
+<span class="kw">return</span> tails.<span class="fn">size</span>();</pre>
+      <div class="callout">
+        嚴格遞增 → <code class="inline">lower_bound</code>；允許相等 → <code class="inline">upper_bound</code>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--pink)"></span>③ 找離 x 最近的元素</div>
+<pre><span class="kw">auto</span> hi = s.<span class="fn">lower_bound</span>(x);
+<span class="kw">int</span> best = INT_MAX;
+<span class="kw">if</span> (hi != s.<span class="fn">end</span>())   best = <span class="fn">min</span>(best, *hi - x);
+<span class="kw">if</span> (hi != s.<span class="fn">begin</span>()) best = <span class="fn">min</span>(best, x - *<span class="fn">prev</span>(hi));</pre>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--green)"></span>④ 離散化</div>
+<pre>vector&lt;<span class="kw">int</span>&gt; v(nums.<span class="fn">begin</span>(), nums.<span class="fn">end</span>());
+<span class="fn">sort</span>(v.<span class="fn">begin</span>(), v.<span class="fn">end</span>());
+v.<span class="fn">erase</span>(<span class="fn">unique</span>(v.<span class="fn">begin</span>(), v.<span class="fn">end</span>()), v.<span class="fn">end</span>());
+
+<span class="cm">// 原值 x 離散化後的 index</span>
+<span class="kw">int</span> idx = <span class="fn">lower_bound</span>(v.<span class="fn">begin</span>(), v.<span class="fn">end</span>(), x) - v.<span class="fn">begin</span>();</pre>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--purple)"></span>⑤ 二分答案（最小可行 k）</div>
+      <p style="font-size:13.5px;">Koko 吃香蕉、切繩子、運送包裹這類題目：對「答案」做二分。</p>
+<pre><span class="kw">int</span> l = <span class="num">1</span>, r = <span class="num">1e9</span>;
+<span class="kw">while</span> (l &lt; r) {
+    <span class="kw">int</span> mid = l + (r - l) / <span class="num">2</span>;
+    <span class="kw">if</span> (<span class="fn">feasible</span>(mid)) r = mid;      <span class="cm">// 能做到，試更小</span>
+    <span class="kw">else</span>                 l = mid + <span class="num">1</span>;
+}
+<span class="kw">return</span> l;</pre>
+    </div>
+  </section>
+
+  <!-- 11 -->
+  <section id="cheatsheet">
+    <h2 class="sec-title"><span class="num">11</span>Cheat Sheet 總表</h2>
+
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--accent)"></span>條件 → 寫法</div>
+      <table>
+        <thead><tr><th>想要</th><th>check / STL</th><th>return</th></tr></thead>
+        <tbody>
+          <tr><td>第一個 ≥ x</td><td class="mono">nums[mid] &gt;= x　｜　lower_bound</td><td class="mono">l</td></tr>
+          <tr><td>第一個 &gt; x</td><td class="mono">nums[mid] &gt; x　｜　upper_bound</td><td class="mono">l</td></tr>
+          <tr><td>最後一個 ≤ x</td><td class="mono">nums[mid] &gt; x　｜　upper_bound - 1</td><td class="mono">l - 1</td></tr>
+          <tr><td>最後一個 &lt; x</td><td class="mono">nums[mid] &gt;= x　｜　lower_bound - 1</td><td class="mono">l - 1</td></tr>
+          <tr><td>x 出現次數</td><td class="mono">upper_bound - lower_bound</td><td>—</td></tr>
+          <tr><td>x 是否存在</td><td class="mono">*lower_bound == x</td><td>—</td></tr>
+          <tr><td>最小可行 k</td><td class="mono">feasible(mid)</td><td class="mono">l</td></tr>
+          <tr><td>最大可行 k</td><td class="mono">!feasible(mid)</td><td class="mono">l - 1</td></tr>
+          <tr><td>Peak Element</td><td class="mono">nums[mid] &gt; nums[mid+1]</td><td class="mono">l</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--yellow)"></span>寫題 SOP</div>
+      <ol>
+        <li><b>畫 TF 陣列</b>：根據題目條件畫出 F…FT…T 或 T…TF…F。</li>
+        <li><b>定義 check(mid)</b>：讓答案 = 第一個 T。</li>
+        <li><b>選模板</b>：偏左 mid + <code class="inline">r = mid</code> + <code class="inline">l = mid+1</code>。</li>
+        <li><b>決定回傳</b>：第一個 T → <code class="inline">l</code>；最後一個 F → <code class="inline">l - 1</code>。</li>
+        <li><b>處理邊界</b>：無 T → l = n；全 T → l = 0。</li>
+      </ol>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--green)"></span>STL 快速選擇</div>
+      <table>
+        <thead><tr><th>情境</th><th>用這個</th></tr></thead>
+        <tbody>
+          <tr><td>已排序 vector</td><td class="mono">std::lower_bound / upper_bound</td></tr>
+          <tr><td>動態插入 + 唯一</td><td class="mono">set + s.lower_bound</td></tr>
+          <tr><td>動態插入 + 重複</td><td class="mono">multiset + ms.lower_bound</td></tr>
+          <tr><td>key-value 有序</td><td class="mono">map + m.lower_bound</td></tr>
+          <tr><td>需要 hash（無序即可）</td><td class="mono">unordered_*（無法二分）</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer style="text-align:center;margin-top:40px;padding-top:24px;border-top:1px solid var(--border);color:var(--text-dim);font-size:12px;font-family:'JetBrains Mono',monospace;">
+    AlgoGif · C++ Binary Search Reference
+  </footer>
+
+</div>
+</body>
+</html>

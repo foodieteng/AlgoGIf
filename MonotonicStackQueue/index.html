@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monotonic Stack / Queue — 動畫教學</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0e14;--bg2:#0f1319;--surface:#151a23;--surface2:#1a2030;
+    --border:#252d3a;--border-bright:#3a4560;
+    --text:#c8d0dc;--text-dim:#6b7a90;--text-bright:#e8edf5;
+    --accent:#59c2ff;--accent-dim:#1a3a55;
+    --green:#7fd962;--green-dim:#1a3520;
+    --orange:#ffb454;--orange-dim:#3a2a15;
+    --red:#ff6b6b;--red-dim:#3a1a1a;
+    --purple:#c792ea;--purple-dim:#2a1a3a;
+    --yellow:#ffd580;--cyan:#95e6cb;--pink:#f07178;
+    --radius:10px;--shadow:0 4px 24px rgba(0,0,0,.4);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'DM Sans','Noto Sans TC',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;min-height:100vh;overflow-x:hidden;}
+  body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;}
+  .app{max-width:1100px;margin:0 auto;padding:36px 22px 100px;}
+
+  header{text-align:center;margin-bottom:28px;}
+  header .eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--accent);margin-bottom:10px;}
+  header h1{font-family:'Instrument Serif',serif;font-size:clamp(28px,4.5vw,44px);font-weight:400;color:var(--text-bright);line-height:1.2;margin-bottom:10px;}
+  header h1 em{font-style:italic;color:var(--yellow);}
+  header .subtitle{font-size:14px;color:var(--text-dim);max-width:660px;margin:0 auto;}
+
+  /* Tabs */
+  .tabs{display:flex;justify-content:center;gap:4px;margin-bottom:20px;flex-wrap:wrap;}
+  .tab{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 18px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);cursor:pointer;transition:all .2s;}
+  .tab:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-dim);}
+  .tab.active{background:var(--accent);color:var(--bg);border-color:var(--accent);}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);margin-bottom:16px;}
+  .card-title{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+  .card-title .dot{width:7px;height:7px;border-radius:50%;}
+
+  .sec-title{font-family:'Instrument Serif',serif;font-size:24px;color:var(--text-bright);margin-bottom:10px;display:flex;align-items:baseline;gap:10px;}
+  .sec-title .num{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent);background:var(--accent-dim);padding:4px 10px;border-radius:6px;letter-spacing:1px;}
+  .sec-sub{font-size:13.5px;color:var(--text-dim);margin-bottom:16px;}
+
+  /* Controls */
+  .controls{display:flex;align-items:center;justify-content:center;gap:10px;margin:14px 0;flex-wrap:wrap;}
+  .btn{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;transition:all .2s;}
+  .btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-dim);}
+  .btn.primary{background:var(--accent);color:var(--bg);border-color:var(--accent);}
+  .btn.primary:hover{background:#7ad2ff;}
+  .btn:disabled{opacity:.35;cursor:not-allowed;}
+  .btn:disabled:hover{border-color:var(--border);color:var(--text);background:var(--surface);}
+  .speed{display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);}
+  .speed input[type=range]{width:80px;accent-color:var(--accent);}
+  .step-info{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);text-align:center;margin-bottom:6px;}
+
+  /* Narration */
+  .narr{background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;font-size:13.5px;min-height:48px;}
+  .narr .hl{color:var(--accent);font-weight:600;}
+  .narr .grn{color:var(--green);font-weight:600;}
+  .narr .org{color:var(--orange);font-weight:600;}
+  .narr .red{color:var(--red);font-weight:600;}
+  .narr .pur{color:var(--purple);font-weight:600;}
+  .narr .ylw{color:var(--yellow);font-weight:600;}
+  .narr code{font-family:'JetBrains Mono',monospace;background:var(--bg2);padding:1px 6px;border-radius:4px;font-size:12px;color:var(--orange);}
+
+  /* Array viz */
+  .arr{display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin:10px 0;}
+  .cell{
+    font-family:'JetBrains Mono',monospace;font-weight:700;
+    min-width:46px;height:46px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);
+    position:relative;transition:all .3s;
+  }
+  .cell .v{font-size:15px;}
+  .cell .i{position:absolute;bottom:-18px;font-size:10px;color:var(--text-dim);font-weight:500;}
+  .cell.cur{background:var(--accent-dim);border-color:var(--accent);color:var(--accent);box-shadow:0 0 16px rgba(89,194,255,.4);transform:translateY(-4px);}
+  .cell.done{background:var(--green-dim);border-color:var(--green);color:var(--green);}
+  .cell.pop{background:var(--red-dim);border-color:var(--red);color:var(--red);opacity:.5;}
+  .cell.inst{background:var(--purple-dim);border-color:var(--purple);color:var(--purple);}
+
+  .bars{display:flex;align-items:flex-end;justify-content:center;gap:4px;height:180px;margin:30px 0 10px;padding:0 10px;}
+  .bar{
+    width:46px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+    border-radius:4px 4px 0 0;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:11px;color:var(--bg);
+    padding-bottom:4px;border:1px solid transparent;position:relative;transition:all .3s;
+  }
+  .bar.idle{background:var(--border-bright);color:var(--text-dim);}
+  .bar.cur{background:var(--accent);box-shadow:0 0 16px rgba(89,194,255,.5);}
+  .bar.inst{background:var(--purple);}
+  .bar.pop{background:var(--red);opacity:.6;}
+  .bar.done{background:var(--green);}
+  .bar .i{position:absolute;bottom:-18px;font-size:10px;color:var(--text-dim);font-weight:500;}
+
+  .stack-viz{
+    background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px;
+    min-height:180px;display:flex;flex-direction:column-reverse;align-items:center;gap:4px;
+  }
+  .stack-item{
+    font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13px;
+    background:var(--surface2);border:1px solid var(--border-bright);color:var(--text-bright);
+    padding:6px 12px;border-radius:6px;min-width:100px;text-align:center;transition:all .3s;
+  }
+  .stack-item.top{border-color:var(--accent);color:var(--accent);background:var(--accent-dim);}
+  .stack-item.popping{border-color:var(--red);color:var(--red);background:var(--red-dim);}
+
+  .deque-viz{
+    background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px;
+    min-height:80px;display:flex;align-items:center;justify-content:center;gap:4px;flex-wrap:wrap;
+  }
+  .deque-empty{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);}
+
+  .two-col{display:grid;grid-template-columns:1fr 280px;gap:16px;}
+  @media(max-width:820px){.two-col{grid-template-columns:1fr;}}
+
+  /* Code block — C++ coloring */
+  pre.code{
+    background:#0d1017;border:1px solid var(--border);border-radius:8px;
+    padding:16px 18px;overflow-x:auto;font-family:'JetBrains Mono',monospace;
+    font-size:12.5px;line-height:1.7;color:#d4dce8;margin:10px 0;
+    tab-size:4;
+  }
+  pre.code .kw{color:#ff79c6;font-weight:600;}      /* keyword: int, if, while, return */
+  pre.code .ty{color:#8be9fd;}                       /* type: vector, stack, deque */
+  pre.code .fn{color:#50fa7b;}                       /* function name */
+  pre.code .num{color:#ffb454;}                      /* number literal */
+  pre.code .str{color:#f1fa8c;}                      /* string literal */
+  pre.code .cm{color:#6272a4;font-style:italic;}     /* comment */
+  pre.code .pp{color:#bd93f9;}                       /* preprocessor */
+  pre.code .op{color:#ff6b6b;}                       /* operator */
+  pre.code .cst{color:#bd93f9;font-weight:600;}      /* constant: true, false, nullptr */
+
+  code.inline{font-family:'JetBrains Mono',monospace;background:var(--surface2);padding:2px 7px;border-radius:5px;font-size:12px;color:var(--orange);border:1px solid var(--border);}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);vertical-align:top;}
+  th{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);font-weight:600;background:var(--bg2);}
+  td.mono{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--orange);}
+  tr:last-child td{border-bottom:none;}
+
+  .callout{background:var(--surface2);border-left:3px solid var(--accent);padding:12px 16px;border-radius:6px;margin:14px 0;font-size:13px;}
+  .callout.warn{border-left-color:var(--orange);}
+  .callout.good{border-left-color:var(--green);}
+  .callout.bad{border-left-color:var(--red);}
+  .callout b{color:var(--text-bright);}
+
+  .pill{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10px;padding:2px 8px;border-radius:4px;font-weight:600;margin-right:4px;letter-spacing:0.5px;}
+  .pill.blue{background:var(--accent-dim);color:var(--accent);border:1px solid var(--accent);}
+  .pill.green{background:var(--green-dim);color:var(--green);border:1px solid var(--green);}
+  .pill.orange{background:var(--orange-dim);color:var(--orange);border:1px solid var(--orange);}
+  .pill.red{background:var(--red-dim);color:var(--red);border:1px solid var(--red);}
+
+  .hl{color:var(--accent);font-weight:600;}
+  .grn{color:var(--green);font-weight:600;}
+  .org{color:var(--orange);font-weight:600;}
+  .red{color:var(--red);font-weight:600;}
+  .ylw{color:var(--yellow);font-weight:600;}
+  .pur{color:var(--purple);font-weight:600;}
+  .dim{color:var(--text-dim);}
+  .en{font-family:'JetBrains Mono',monospace;font-size:.93em;}
+
+  ul,ol{padding-left:22px;}
+  li{margin-bottom:6px;font-size:13.5px;}
+
+  .panel-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="eyebrow">Monotonic Stack / Queue · Animated Guide</div>
+    <h1><em>Monotonic Stack / Queue</em> 動畫教學</h1>
+    <p class="subtitle">從核心概念到 5 個經典題型，每題都有逐步動畫、narration、與 C++ 模板。</p>
+  </header>
+
+  <div id="app"></div>
+
+</div>
+
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.2/babel.min.js"></script>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+/* =========================================================
+   C++ syntax highlighter
+   ========================================================= */
+const CPP_KEYWORDS = ['int','void','auto','const','return','if','else','while','for','do','bool','char','long','short','unsigned','signed','static','struct','class','public','private','protected','template','typename','using','namespace','break','continue','new','delete','this','operator','switch','case','default','throw','try','catch'];
+const CPP_TYPES    = ['vector','stack','deque','queue','priority_queue','string','pair','map','set','multiset','multimap','unordered_map','unordered_set','array','list','size_t','int32_t','int64_t','uint32_t','uint64_t'];
+const CPP_CONSTS   = ['true','false','nullptr','NULL','INT_MAX','INT_MIN','LONG_MAX'];
+
+function hlCpp(code){
+  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const stash = [];
+  const keep = (html) => { stash.push(html); return '\u0000' + (stash.length-1) + '\u0001'; };
+
+  let s = esc(code);
+
+  // 1) comments
+  s = s.replace(/\/\/[^\n]*/g, m => keep('<span class="cm">'+m+'</span>'));
+  // 2) strings
+  s = s.replace(/"(?:\\.|[^"\\])*"/g, m => keep('<span class="str">'+m+'</span>'));
+  // 3) preprocessor
+  s = s.replace(/^[ \t]*#[^\n]*/gm, m => keep('<span class="pp">'+m+'</span>'));
+  // 4) keywords
+  s = s.replace(new RegExp('\\b('+CPP_KEYWORDS.join('|')+')\\b','g'), '<span class="kw">$1</span>');
+  // 5) types
+  s = s.replace(new RegExp('\\b('+CPP_TYPES.join('|')+')\\b','g'), '<span class="ty">$1</span>');
+  // 6) constants
+  s = s.replace(new RegExp('\\b('+CPP_CONSTS.join('|')+')\\b','g'), '<span class="cst">$1</span>');
+  // 7) numbers
+  s = s.replace(/\b(\d+(?:\.\d+)?)\b/g, '<span class="num">$1</span>');
+  // 8) function calls — word followed by (, but skip if already in span tag or a keyword
+  s = s.replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)(?=\s*\()/g, (m, name) => {
+    // avoid tagging things like "span" that already landed inside tag markup
+    return '<span class="fn">'+name+'</span>';
+  });
+
+  // restore stashed tokens
+  s = s.replace(/\u0000(\d+)\u0001/g, (_,i)=>stash[+i]);
+  return s;
+}
+
+function Code({children}){
+  return <pre className="code" dangerouslySetInnerHTML={{__html:hlCpp(children)}}/>;
+}
+
+/* =========================================================
+   Simulators
+   ========================================================= */
+
+// 1. Next Greater Element (scan right to left, decreasing stack)
+function simNGE(nums){
+  const n = nums.length;
+  const ans = Array(n).fill(-1);
+  const stk = [];
+  const steps = [];
+  steps.push({arr:nums, cur:-1, stack:[...stk], ans:[...ans], pop:[],
+    narr:"從右向左掃描，維護一個 <span class='hl'>monotonic decreasing stack</span>（底到頂值遞減）。"});
+  for(let i=n-1;i>=0;i--){
+    steps.push({arr:nums, cur:i, stack:[...stk], ans:[...ans], pop:[],
+      narr:`<span class='hl'>i=${i}</span>, value <span class='ylw'>${nums[i]}</span>。把 stack 中 ≤ ${nums[i]} 的 index 全部 pop。`});
+    const popped=[];
+    while(stk.length && nums[stk[stk.length-1]] <= nums[i]){
+      const p = stk.pop();
+      popped.push(p);
+      steps.push({arr:nums, cur:i, stack:[...stk], ans:[...ans], pop:[...popped],
+        narr:`pop index <span class='red'>${p}</span> (value ${nums[p]})：${nums[p]} ≤ ${nums[i]}，它不可能成為 i 的 next greater。`});
+    }
+    ans[i] = stk.length ? nums[stk[stk.length-1]] : -1;
+    stk.push(i);
+    steps.push({arr:nums, cur:i, stack:[...stk], ans:[...ans], pop:[],
+      narr:`top = <span class='grn'>${ans[i]===-1?'empty':ans[i]}</span> → ans[${i}] = ${ans[i]}。push i=${i}。`});
+  }
+  steps.push({arr:nums, cur:-1, stack:[...stk], ans:[...ans], pop:[],
+    narr:`完成！<span class='grn'>NGE = [${ans.join(', ')}]</span>`});
+  return steps;
+}
+
+// 2. Daily Temperatures (scan left to right, decreasing stack)
+function simDaily(T){
+  const n=T.length;
+  const ans=Array(n).fill(0);
+  const stk=[];
+  const steps=[];
+  steps.push({arr:T, cur:-1, stack:[], ans:[...ans], pop:[],
+    narr:"從左向右掃描。Monotonic decreasing stack 存放「還在等更高溫度」的 index。"});
+  for(let i=0;i<n;i++){
+    steps.push({arr:T, cur:i, stack:[...stk], ans:[...ans], pop:[],
+      narr:`<span class='hl'>day ${i}</span>, temp <span class='ylw'>${T[i]}</span>。檢查 top 是否比今天低。`});
+    const popped=[];
+    while(stk.length && T[stk[stk.length-1]] < T[i]){
+      const p=stk.pop();
+      popped.push(p);
+      ans[p] = i - p;
+      steps.push({arr:T, cur:i, stack:[...stk], ans:[...ans], pop:[...popped],
+        narr:`day ${p} (${T[p]}°) &lt; day ${i} (${T[i]}°) → 等到了！ans[${p}] = ${i} - ${p} = <span class='grn'>${ans[p]}</span>。pop it。`});
+    }
+    stk.push(i);
+    steps.push({arr:T, cur:i, stack:[...stk], ans:[...ans], pop:[],
+      narr:`push day ${i} 進 stack，等待未來更高溫度。`});
+  }
+  steps.push({arr:T, cur:-1, stack:[...stk], ans:[...ans], pop:[],
+    narr:`完成！stack 中剩下的 day 永遠等不到更高溫度，ans 保持 0。`});
+  return steps;
+}
+
+// 3. Largest Rectangle in Histogram (increasing stack + sentinel)
+function simHisto(H){
+  const h=[...H, 0];
+  const n=h.length;
+  const stk=[];
+  const steps=[];
+  let best=0, bestRange=[-1,-1];
+  steps.push({arr:H, cur:-1, stack:[], best, bestRange,
+    narr:"Monotonic increasing stack (of index)。遇到更矮的就 pop 並計算以它為「min height」的矩形。"});
+  for(let i=0;i<n;i++){
+    const showLabel = i===n-1 ? `<span class='pur'>sentinel 0</span>` : `<span class='hl'>i=${i}</span>, height <span class='ylw'>${h[i]}</span>`;
+    steps.push({arr:H, cur:i<H.length?i:-1, sentinel:i===n-1, stack:[...stk], best, bestRange, narr:`${showLabel}。`});
+    while(stk.length && h[stk[stk.length-1]] > h[i]){
+      const top = stk.pop();
+      const H2 = h[top];
+      const left = stk.length ? stk[stk.length-1] : -1;
+      const width = i - left - 1;
+      const area = H2 * width;
+      let narr = `pop index <span class='red'>${top}</span> (h=${H2})。以它當 min → left bound ${left}, right bound ${i}, width ${width}, area = ${H2}×${width} = <span class='grn'>${area}</span>。`;
+      if(area>best){best=area;bestRange=[left+1,i-1];narr+=` <span class='ylw'>new max!</span>`;}
+      steps.push({arr:H, cur:i<H.length?i:-1, sentinel:i===n-1, stack:[...stk], popped:top, area, best, bestRange, narr});
+    }
+    if(i<n-1){stk.push(i);steps.push({arr:H, cur:i, stack:[...stk], best, bestRange,
+      narr:`push ${i}。stack 內高度保持遞增。`});}
+  }
+  steps.push({arr:H, cur:-1, stack:[], best, bestRange,
+    narr:`完成！max rectangle area = <span class='grn'>${best}</span>, span index ${bestRange[0]}..${bestRange[1]}。`});
+  return steps;
+}
+
+// 4. Sliding Window Maximum (monotonic deque)
+function simSlideMax(nums, k){
+  const n=nums.length;
+  const dq=[];
+  const ans=[];
+  const steps=[];
+  steps.push({arr:nums, cur:-1, deque:[], ans:[], windowL:-1, windowR:-1, k,
+    narr:`window size k=${k}。<span class='hl'>Monotonic decreasing deque</span> 存 index：front 永遠是當前 window 的 max。`});
+  for(let i=0;i<n;i++){
+    steps.push({arr:nums, cur:i, deque:[...dq], ans:[...ans], windowL:Math.max(0,i-k+1), windowR:i, k,
+      narr:`<span class='hl'>i=${i}</span>, value <span class='ylw'>${nums[i]}</span>。`});
+    if(dq.length && dq[0] <= i-k){
+      const o = dq.shift();
+      steps.push({arr:nums, cur:i, deque:[...dq], ans:[...ans], windowL:Math.max(0,i-k+1), windowR:i, k,
+        narr:`front index <span class='red'>${o}</span> 已離開 window (&lt; i-k+1 = ${i-k+1})，<span class='red'>pop_front</span>。`});
+    }
+    while(dq.length && nums[dq[dq.length-1]] < nums[i]){
+      const p=dq.pop();
+      steps.push({arr:nums, cur:i, deque:[...dq], ans:[...ans], windowL:Math.max(0,i-k+1), windowR:i, k,
+        narr:`back value ${nums[p]} &lt; ${nums[i]}，<span class='red'>pop_back</span> index ${p}。`});
+    }
+    dq.push(i);
+    steps.push({arr:nums, cur:i, deque:[...dq], ans:[...ans], windowL:Math.max(0,i-k+1), windowR:i, k,
+      narr:`<span class='grn'>push_back</span> i=${i}。`});
+    if(i>=k-1){
+      ans.push(nums[dq[0]]);
+      steps.push({arr:nums, cur:i, deque:[...dq], ans:[...ans], windowL:i-k+1, windowR:i, k,
+        narr:`window [${i-k+1}, ${i}] max = front nums[${dq[0]}] = <span class='grn'>${nums[dq[0]]}</span>。`});
+    }
+  }
+  steps.push({arr:nums, cur:-1, deque:[...dq], ans:[...ans], windowL:-1, windowR:-1, k,
+    narr:`完成！answer = [${ans.join(', ')}]`});
+  return steps;
+}
+
+// 5. Trapping Rain Water (decreasing stack)
+function simRain(H){
+  const n=H.length;
+  const stk=[];
+  const steps=[];
+  let water=0;
+  const filled = Array(n).fill(0);
+  steps.push({arr:H, cur:-1, stack:[], water, filled:[...filled],
+    narr:"Monotonic decreasing stack 存放「walls」。遇到更高的就 pop 中間作為 bottom，計算可蓄水量。"});
+  for(let i=0;i<n;i++){
+    steps.push({arr:H, cur:i, stack:[...stk], water, filled:[...filled],
+      narr:`<span class='hl'>i=${i}</span>, height <span class='ylw'>${H[i]}</span>。`});
+    while(stk.length && H[stk[stk.length-1]] < H[i]){
+      const bottom = stk.pop();
+      if(!stk.length) break;
+      const left = stk[stk.length-1];
+      const width = i - left - 1;
+      const h = Math.min(H[left], H[i]) - H[bottom];
+      const add = width * h;
+      water += add;
+      for(let j=left+1;j<i;j++) filled[j] = Math.max(filled[j], Math.min(H[left],H[i]));
+      steps.push({arr:H, cur:i, stack:[...stk], water, filled:[...filled],
+        narr:`bottom <span class='red'>${bottom}</span> (${H[bottom]}), left wall ${left} (${H[left]}), right wall ${i} (${H[i]})。width ${width}, h = min(${H[left]},${H[i]})-${H[bottom]} = ${h}。water <span class='grn'>+${add}</span>。`});
+    }
+    stk.push(i);
+    steps.push({arr:H, cur:i, stack:[...stk], water, filled:[...filled],
+      narr:`push ${i}。`});
+  }
+  steps.push({arr:H, cur:-1, stack:[...stk], water, filled:[...filled],
+    narr:`完成！total water = <span class='grn'>${water}</span>。`});
+  return steps;
+}
+
+/* =========================================================
+   Player
+   ========================================================= */
+function Player({steps, speed, setSpeed, render}){
+  const [i,setI] = useState(0);
+  const [playing,setPlaying] = useState(false);
+  const iref = useRef(i); iref.current = i;
+  useEffect(()=>{
+    if(!playing) return;
+    const t = setTimeout(()=>{
+      if(iref.current < steps.length-1) setI(iref.current+1);
+      else setPlaying(false);
+    }, 1100 - speed*90);
+    return ()=>clearTimeout(t);
+  },[i,playing,speed,steps.length]);
+  useEffect(()=>{setI(0);setPlaying(false);},[steps]);
+
+  const s = steps[i];
+  return (
+    <>
+      <div className="step-info">Step {i+1} / {steps.length}</div>
+      <div className="narr" dangerouslySetInnerHTML={{__html:s.narr}}/>
+      {render(s)}
+      <div className="controls">
+        <button className="btn" onClick={()=>{setI(0);setPlaying(false);}}>⟲ Reset</button>
+        <button className="btn" onClick={()=>{setPlaying(false);setI(Math.max(0,i-1));}} disabled={i===0}>← Prev</button>
+        <button className="btn primary" onClick={()=>{if(i>=steps.length-1)setI(0);setPlaying(!playing);}}>
+          {playing?'❚❚ Pause':'▶ Play'}
+        </button>
+        <button className="btn" onClick={()=>{setPlaying(false);setI(Math.min(steps.length-1,i+1));}} disabled={i===steps.length-1}>Next →</button>
+        <div className="speed">
+          Speed
+          <input type="range" min="1" max="10" value={speed} onChange={e=>setSpeed(+e.target.value)}/>
+          {speed}x
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* =========================================================
+   Visualizers
+   ========================================================= */
+function ArrStack({step}){
+  const {arr, cur, stack, ans, pop} = step;
+  return (
+    <div className="two-col">
+      <div>
+        <div className="panel-label">array</div>
+        <div className="arr">
+          {arr.map((v,i)=>{
+            let cls="cell";
+            if(pop && pop.includes(i)) cls+=" pop";
+            else if(i===cur) cls+=" cur";
+            else if(ans && ans[i]!==undefined && ans[i]!==-1 && ans[i]!==0) cls+=" done";
+            return <div key={i} className={cls}><span className="v">{v}</span><span className="i">{i}</span></div>;
+          })}
+        </div>
+        {ans && (
+          <>
+            <div className="panel-label" style={{marginTop:26}}>answer</div>
+            <div className="arr">
+              {ans.map((v,i)=>(
+                <div key={i} className={"cell "+(v!==-1&&v!==0?"done":"")}><span className="v">{v}</span><span className="i">{i}</span></div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+      <div>
+        <div className="panel-label">stack (top →)</div>
+        <div className="stack-viz">
+          {stack.length===0 && <span className="deque-empty">empty</span>}
+          {stack.map((idx,si)=>(
+            <div key={si} className={"stack-item "+(si===stack.length-1?"top":"")}>
+              idx {idx}　val {arr[idx]}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Histogram({step}){
+  const {arr, cur, stack, best, bestRange, popped, area, sentinel} = step;
+  const max = Math.max(...arr, 1);
+  return (
+    <div className="two-col">
+      <div>
+        <div className="panel-label">heights {sentinel && <span style={{color:'var(--purple)'}}>(+ sentinel 0)</span>}</div>
+        <div className="bars">
+          {arr.map((v,i)=>{
+            let cls="bar idle";
+            if(i===cur) cls="bar cur";
+            else if(stack.includes(i)) cls="bar inst";
+            if(popped===i) cls="bar pop";
+            const inRange = bestRange && i>=bestRange[0] && i<=bestRange[1];
+            if(inRange && cur===-1) cls="bar done";
+            return (
+              <div key={i} className={cls} style={{height:`${(v/max)*150+18}px`}}>
+                {v}<span className="i">{i}</span>
+              </div>
+            );
+          })}
+          {sentinel && (
+            <div className="bar" style={{height:'18px',background:'var(--purple)',opacity:.7}}>0<span className="i">{arr.length}</span></div>
+          )}
+        </div>
+        <div style={{textAlign:'center',marginTop:16,fontFamily:'JetBrains Mono, monospace',fontSize:12,color:'var(--text-dim)'}}>
+          max area: <span className="grn" style={{fontSize:16}}>{best}</span>
+          {area!==undefined && <span style={{marginLeft:14,color:'var(--orange)'}}>this round: {area}</span>}
+        </div>
+      </div>
+      <div>
+        <div className="panel-label">stack (top →)</div>
+        <div className="stack-viz">
+          {stack.length===0 && <span className="deque-empty">empty</span>}
+          {stack.map((idx,si)=>(
+            <div key={si} className={"stack-item "+(si===stack.length-1?"top":"")}>
+              idx {idx}　h {arr[idx]??0}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SlideViz({step}){
+  const {arr, cur, deque, ans, windowL, windowR} = step;
+  return (
+    <div>
+      <div className="panel-label">nums (dashed = current window)</div>
+      <div className="arr">
+        {arr.map((v,i)=>{
+          let cls="cell";
+          const inWindow = i>=windowL && i<=windowR;
+          if(deque.includes(i)) cls+=" inst";
+          if(i===cur) cls+=" cur";
+          const style = inWindow && i!==cur ? {outline:'2px dashed var(--accent)',outlineOffset:'2px'} : {};
+          return <div key={i} className={cls} style={style}><span className="v">{v}</span><span className="i">{i}</span></div>;
+        })}
+      </div>
+      <div style={{marginTop:26}}>
+        <div className="panel-label">deque (front ← → back)</div>
+        <div className="deque-viz">
+          {deque.length===0 && <span className="deque-empty">empty</span>}
+          {deque.map((idx,di)=>(
+            <div key={di} className={"stack-item "+(di===0?"top":"")}>
+              idx {idx}　val {arr[idx]}
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={{marginTop:16}}>
+        <div className="panel-label">answer (max of each window)</div>
+        <div className="arr">
+          {ans.length===0 && <span className="deque-empty">(none yet)</span>}
+          {ans.map((v,i)=>(
+            <div key={i} className="cell done"><span className="v">{v}</span><span className="i">w{i}</span></div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RainViz({step}){
+  const {arr, cur, stack, water, filled} = step;
+  const max = Math.max(...arr, 1);
+  return (
+    <div className="two-col">
+      <div>
+        <div className="panel-label">heights (blue = water)</div>
+        <div className="bars" style={{height:200}}>
+          {arr.map((v,i)=>{
+            let cls="bar idle";
+            if(i===cur) cls="bar cur";
+            else if(stack.includes(i)) cls="bar inst";
+            const waterH = Math.max(0, filled[i]-v);
+            const barH = (v/max)*150+18;
+            const waterPx = (waterH/max)*150;
+            return (
+              <div key={i} style={{position:'relative',display:'flex',flexDirection:'column-reverse',alignItems:'center',width:46}}>
+                <div className={cls} style={{height:`${barH}px`,width:'100%'}}>
+                  {v}<span className="i">{i}</span>
+                </div>
+                {waterH>0 && (
+                  <div style={{width:'100%',height:`${waterPx}px`,background:'rgba(89,194,255,.4)',borderTop:'2px solid var(--accent)',borderRadius:'4px 4px 0 0'}}/>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        <div style={{textAlign:'center',marginTop:16,fontFamily:'JetBrains Mono, monospace',fontSize:12,color:'var(--text-dim)'}}>
+          total water: <span className="grn" style={{fontSize:16}}>{water}</span>
+        </div>
+      </div>
+      <div>
+        <div className="panel-label">stack (top →)</div>
+        <div className="stack-viz">
+          {stack.length===0 && <span className="deque-empty">empty</span>}
+          {stack.map((idx,si)=>(
+            <div key={si} className={"stack-item "+(si===stack.length-1?"top":"")}>
+              idx {idx}　h {arr[idx]}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================
+   Main
+   ========================================================= */
+const TOPICS = [
+  {key:'concept', label:'① Concept'},
+  {key:'nge',     label:'② Next Greater'},
+  {key:'daily',   label:'③ Daily Temp'},
+  {key:'histo',   label:'④ Histogram'},
+  {key:'slide',   label:'⑤ Sliding Max'},
+  {key:'rain',    label:'⑥ Trap Rain'},
+  {key:'cheat',   label:'⑦ Cheat Sheet'},
+];
+
+function App(){
+  const [tab,setTab] = useState('concept');
+  const [speed,setSpeed] = useState(5);
+
+  const [ngeSteps]   = useState(()=>simNGE([2,1,2,4,3]));
+  const [dailySteps] = useState(()=>simDaily([73,74,75,71,69,72,76,73]));
+  const [histoSteps] = useState(()=>simHisto([2,1,5,6,2,3]));
+  const [slideSteps] = useState(()=>simSlideMax([1,3,-1,-3,5,3,6,7], 3));
+  const [rainSteps]  = useState(()=>simRain([0,1,0,2,1,0,1,3,2,1,2,1]));
+
+  return (
+    <div>
+      <div className="tabs">
+        {TOPICS.map(t=>(
+          <button key={t.key} className={"tab"+(tab===t.key?" active":"")} onClick={()=>setTab(t.key)}>{t.label}</button>
+        ))}
+      </div>
+
+      {tab==='concept' && <Concept/>}
+
+      {tab==='nge' && (
+        <div>
+          <h2 className="sec-title"><span className="num">02</span>Next Greater Element</h2>
+          <p className="sec-sub">nums = [2, 1, 2, 4, 3]。對每個 index 找「右邊第一個比它大的 value」，不存在則 -1。</p>
+          <div className="card"><Player steps={ngeSteps} speed={speed} setSpeed={setSpeed} render={s=><ArrStack step={s}/>}/></div>
+          <Explain topic="nge"/>
+        </div>
+      )}
+
+      {tab==='daily' && (
+        <div>
+          <h2 className="sec-title"><span className="num">03</span>Daily Temperatures <span className="en dim" style={{fontSize:14}}>· LC 739</span></h2>
+          <p className="sec-sub">對每一 day，回傳「還要等幾天才會有更高溫度」，沒有則 0。</p>
+          <div className="card"><Player steps={dailySteps} speed={speed} setSpeed={setSpeed} render={s=><ArrStack step={s}/>}/></div>
+          <Explain topic="daily"/>
+        </div>
+      )}
+
+      {tab==='histo' && (
+        <div>
+          <h2 className="sec-title"><span className="num">04</span>Largest Rectangle in Histogram <span className="en dim" style={{fontSize:14}}>· LC 84</span></h2>
+          <p className="sec-sub">heights = [2,1,5,6,2,3]。找 max rectangle area。</p>
+          <div className="card"><Player steps={histoSteps} speed={speed} setSpeed={setSpeed} render={s=><Histogram step={s}/>}/></div>
+          <Explain topic="histo"/>
+        </div>
+      )}
+
+      {tab==='slide' && (
+        <div>
+          <h2 className="sec-title"><span className="num">05</span>Sliding Window Maximum <span className="en dim" style={{fontSize:14}}>· LC 239</span></h2>
+          <p className="sec-sub">nums = [1,3,-1,-3,5,3,6,7], k = 3。每個大小 k 的 window max。</p>
+          <div className="card"><Player steps={slideSteps} speed={speed} setSpeed={setSpeed} render={s=><SlideViz step={s}/>}/></div>
+          <Explain topic="slide"/>
+        </div>
+      )}
+
+      {tab==='rain' && (
+        <div>
+          <h2 className="sec-title"><span className="num">06</span>Trapping Rain Water <span className="en dim" style={{fontSize:14}}>· LC 42</span></h2>
+          <p className="sec-sub">heights = [0,1,0,2,1,0,1,3,2,1,2,1]。計算能 trap 多少水。</p>
+          <div className="card"><Player steps={rainSteps} speed={speed} setSpeed={setSpeed} render={s=><RainViz step={s}/>}/></div>
+          <Explain topic="rain"/>
+        </div>
+      )}
+
+      {tab==='cheat' && <CheatSheet/>}
+    </div>
+  );
+}
+
+function Concept(){
+  return (
+    <>
+      <h2 className="sec-title"><span className="num">01</span>Concept — 核心概念</h2>
+      <p className="sec-sub"><span className="en">Monotonic stack / queue</span> = 在 stack / deque 內永遠維持元素單調有序。違反順序的舊元素會被淘汰。</p>
+
+      <div className="card">
+        <div className="card-title"><span className="dot" style={{background:'var(--yellow)'}}></span>為什麼要「monotonic」？</div>
+        <p style={{fontSize:13.5}}>當新元素 x 進來時，如果它「比 top 還要好（更大 / 更小）」，那 top 的舊元素<span className="red">永遠不會再用到</span>——因為 x 更新鮮又更好。直接丟掉。這樣每個元素最多 push / pop 一次 → <span className="grn">O(n)</span>。</p>
+
+        <div className="callout good">
+          <b>一句話總結：</b>monotonic 結構在找「<span className="hl">next / previous greater / smaller element</span>」時能做到 O(n)。
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-title"><span className="dot" style={{background:'var(--accent)'}}></span>四種組合：increasing vs decreasing × direction</div>
+        <table>
+          <thead><tr><th>Problem</th><th>Scan</th><th>Stack order (bottom→top)</th><th>Pop 條件</th></tr></thead>
+          <tbody>
+            <tr><td>Next Greater (NGE)</td><td>right → left</td><td><span className="red">decreasing</span></td><td>top ≤ current</td></tr>
+            <tr><td>Next Smaller (NSE)</td><td>right → left</td><td><span className="grn">increasing</span></td><td>top ≥ current</td></tr>
+            <tr><td>Prev Greater (PGE)</td><td>left → right</td><td><span className="red">decreasing</span></td><td>top ≤ current</td></tr>
+            <tr><td>Prev Smaller (PSE)</td><td>left → right</td><td><span className="grn">increasing</span></td><td>top ≥ current</td></tr>
+          </tbody>
+        </table>
+        <div className="callout">
+          <b>口訣：</b>找 <span className="hl">greater</span> → stack <span className="red">decreasing</span>；找 <span className="hl">smaller</span> → stack <span className="grn">increasing</span>。direction 決定從左或右開始。
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-title"><span className="dot" style={{background:'var(--purple)'}}></span>通用 C++ template</div>
+
+        <div style={{fontSize:12.5,color:'var(--text-dim)',marginBottom:6,fontFamily:'JetBrains Mono, monospace'}}>// pattern A — scan from right, query at current i</div>
+        <Code>{`// NGE: find first value greater than nums[i] to the right
+vector<int> nge(vector<int>& nums) {
+    int n = nums.size();
+    vector<int> ans(n, -1);
+    stack<int> stk;                          // stores index, values decreasing
+    for (int i = n - 1; i >= 0; --i) {
+        while (!stk.empty() && nums[stk.top()] <= nums[i])
+            stk.pop();                       // discard values that can't beat nums[i]
+        if (!stk.empty()) ans[i] = nums[stk.top()];
+        stk.push(i);
+    }
+    return ans;
+}`}</Code>
+
+        <div style={{fontSize:12.5,color:'var(--text-dim)',marginBottom:6,marginTop:14,fontFamily:'JetBrains Mono, monospace'}}>// pattern B — scan from left, settle elements when popped</div>
+        <Code>{`// Daily Temperatures: days until a warmer temperature
+vector<int> dailyTemp(vector<int>& T) {
+    int n = T.size();
+    vector<int> ans(n, 0);
+    stack<int> stk;                          // stores index, values decreasing
+    for (int i = 0; i < n; ++i) {
+        while (!stk.empty() && T[stk.top()] < T[i]) {
+            int j = stk.top(); stk.pop();
+            ans[j] = i - j;                  // settle j's answer now
+        }
+        stk.push(i);
+    }
+    return ans;
+}`}</Code>
+
+        <div className="callout warn">
+          <b>兩種 pattern 的差別：</b>
+          <ul style={{marginTop:6}}>
+            <li><b>Pattern A (right → left)：</b>進到 i 時直接查 top → 結算 i 自己。</li>
+            <li><b>Pattern B (left → right)：</b>進到 i 時看它能結算誰 → 被 pop 時結算它。</li>
+          </ul>
+          兩種都對，看題目方便哪種。
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-title"><span className="dot" style={{background:'var(--cyan)'}}></span>Monotonic deque（sliding window）</div>
+        <p style={{fontSize:13.5}}>比 stack 多了「<span className="hl">front 也要 pop 過期 index</span>」，通常用於 <span className="ylw">sliding window</span> 題型。</p>
+
+        <Code>{`// Sliding Window Maximum
+vector<int> maxSlide(vector<int>& nums, int k) {
+    deque<int> dq;                           // stores index, values decreasing
+    vector<int> ans;
+    for (int i = 0; i < (int)nums.size(); ++i) {
+        // 1. pop_front out-of-window index
+        if (!dq.empty() && dq.front() <= i - k) dq.pop_front();
+        // 2. pop_back smaller values (they'll never be max while nums[i] is alive)
+        while (!dq.empty() && nums[dq.back()] < nums[i]) dq.pop_back();
+        dq.push_back(i);
+        // 3. record answer once first window is full
+        if (i >= k - 1) ans.push_back(nums[dq.front()]);
+    }
+    return ans;
+}`}</Code>
+
+        <div className="callout good">
+          <b>三步循環：</b><span className="red">① pop_front 過期</span> → <span className="org">② pop_back 維護 monotonic</span> → <span className="grn">③ front 就是答案</span>。
+        </div>
+      </div>
+    </>
+  );
+}
+
+function Explain({topic}){
+  if(topic==='nge') return (
+    <div className="card">
+      <div className="card-title"><span className="dot" style={{background:'var(--green)'}}></span>關鍵理解</div>
+      <ul>
+        <li>從 <span className="hl">right → left</span> 掃：每到 i，stack 裡已經有 i 右邊所有候選人，<span className="grn">top 就是潛在答案</span>。</li>
+        <li>Pop 條件 <code className="inline">nums[stk.top()] &lt;= nums[i]</code>：這些舊值將來碰到誰都比不過 nums[i]，<span className="red">永遠用不到</span>。</li>
+        <li>用 <code className="inline">&lt;</code> 還是 <code className="inline">&lt;=</code> 取決於要「strictly greater」還是「≥」。</li>
+      </ul>
+    </div>
+  );
+  if(topic==='daily') return (
+    <div className="card">
+      <div className="card-title"><span className="dot" style={{background:'var(--green)'}}></span>關鍵理解</div>
+      <ul>
+        <li>從 <span className="hl">left → right</span> 掃：stack 裡是「還在等 warmer day」的 index。</li>
+        <li>今天比 top 熱 → top <span className="grn">終於等到了</span>，在這一刻結算 <code className="inline">ans[j] = i - j</code>。</li>
+        <li>答案是「距離 / index 差」時，stack 存 <span className="hl">index</span> 比存 value 方便。</li>
+      </ul>
+    </div>
+  );
+  if(topic==='histo') return (
+    <div className="card">
+      <div className="card-title"><span className="dot" style={{background:'var(--green)'}}></span>關鍵理解</div>
+      <ul>
+        <li>對每根 bar 問：「以我為 <span className="hl">min height</span> 的 max rectangle 多大？」</li>
+        <li>往左找 first smaller (PSE)，往右找 first smaller (NSE)，就是左右邊界。</li>
+        <li>Increasing stack 在 pop 時：popped bar = min height, <span className="org">left bound = new top</span>, <span className="org">right bound = i</span>, width = <code className="inline">i - left - 1</code>。</li>
+        <li>最後加一個 <span className="pur">sentinel 0</span>，逼 stack 內所有元素都被結算。</li>
+      </ul>
+      <div className="callout warn">
+        <b>同家族題：</b>Maximal Rectangle (LC 85)、Sum of Subarray Minimums (LC 907)。
+      </div>
+      <Code>{`int largestRectangle(vector<int>& heights) {
+    heights.push_back(0);                    // sentinel
+    stack<int> stk;
+    int best = 0;
+    for (int i = 0; i < (int)heights.size(); ++i) {
+        while (!stk.empty() && heights[stk.top()] > heights[i]) {
+            int top = stk.top(); stk.pop();
+            int left = stk.empty() ? -1 : stk.top();
+            int width = i - left - 1;
+            best = max(best, heights[top] * width);
+        }
+        stk.push(i);
+    }
+    return best;
+}`}</Code>
+    </div>
+  );
+  if(topic==='slide') return (
+    <div className="card">
+      <div className="card-title"><span className="dot" style={{background:'var(--green)'}}></span>關鍵理解</div>
+      <ul>
+        <li>deque 存的是 <span className="hl">index</span>，對應 values 遞減。</li>
+        <li>front 永遠是 window 內目前 max value 的 index。</li>
+        <li>新元素來時：pop_back 比它小的（反正被它取代），pop_front 越界的。</li>
+        <li>每個元素最多 push / pop 一次 → <span className="grn">O(n)</span>。</li>
+      </ul>
+      <div className="callout">
+        <b>變形：</b>把 <code className="inline">&lt;</code> 改 <code className="inline">&gt;</code> 就是 Sliding Window Minimum。
+      </div>
+    </div>
+  );
+  if(topic==='rain') return (
+    <div className="card">
+      <div className="card-title"><span className="dot" style={{background:'var(--green)'}}></span>關鍵理解</div>
+      <ul>
+        <li>每次遇到「右邊更高」→ top 當 bottom，與新 top (左牆) 組成凹槽。</li>
+        <li>水面高度 = <code className="inline">min(left wall, right wall) - bottom</code>。</li>
+        <li>水量 = <code className="inline">width × height</code>，<span className="org">每次結算一層水</span>。</li>
+      </ul>
+      <Code>{`int trap(vector<int>& H) {
+    stack<int> stk;
+    int water = 0;
+    for (int i = 0; i < (int)H.size(); ++i) {
+        while (!stk.empty() && H[stk.top()] < H[i]) {
+            int bottom = stk.top(); stk.pop();
+            if (stk.empty()) break;
+            int left = stk.top();
+            int width = i - left - 1;
+            int h = min(H[left], H[i]) - H[bottom];
+            water += width * h;
+        }
+        stk.push(i);
+    }
+    return water;
+}`}</Code>
+      <div className="callout">
+        <b>另解：</b>two pointers 可做到 O(n) time / O(1) space，但 monotonic stack 比較直觀。
+      </div>
+    </div>
+  );
+  return null;
+}
+
+function CheatSheet(){
+  return (
+    <>
+      <h2 className="sec-title"><span className="num">07</span>Cheat Sheet</h2>
+
+      <div className="card">
+        <div className="card-title"><span className="dot" style={{background:'var(--accent)'}}></span>常見題型對照</div>
+        <table>
+          <thead><tr><th>Problem</th><th>DS</th><th>Order</th><th>Scan</th></tr></thead>
+          <tbody>
+            <tr><td>Next/Prev Greater (LC 496 / 503)</td><td>stack</td><td>decreasing</td><td>either</td></tr>
+            <tr><td>Daily Temperatures (LC 739)</td><td>stack</td><td>decreasing</td><td>L→R</td></tr>
+            <tr><td>Largest Rectangle (LC 84)</td><td>stack</td><td>increasing</td><td>L→R + sentinel</td></tr>
+            <tr><td>Maximal Rectangle (LC 85)</td><td>stack</td><td>increasing</td><td>row-by-row LC 84</td></tr>
+            <tr><td>Trapping Rain Water (LC 42)</td><td>stack</td><td>decreasing</td><td>L→R</td></tr>
+            <tr><td>Sum of Subarray Minimums (LC 907)</td><td>stack</td><td>increasing</td><td>contribution</td></tr>
+            <tr><td>Remove K Digits (LC 402)</td><td>stack</td><td>increasing</td><td>L→R, greedy pop</td></tr>
+            <tr><td>Sliding Window Max (LC 239)</td><td>deque</td><td>decreasing</td><td>L→R</td></tr>
+            <tr><td>Shortest Subarray Sum ≥ K (LC 862)</td><td>deque</td><td>prefix inc.</td><td>L→R</td></tr>
+            <tr><td>Constrained DP (LC 1425)</td><td>deque</td><td>dp decreasing</td><td>L→R</td></tr>
+            <tr><td>Visible People (LC 1944)</td><td>stack</td><td>decreasing</td><td>R→L</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div className="card">
+        <div className="card-title"><span className="dot" style={{background:'var(--yellow)'}}></span>識別訊號 — 什麼時候該想到 monotonic 結構？</div>
+        <ul>
+          <li>「<span className="hl">next / previous greater / smaller</span>」→ monotonic stack。</li>
+          <li>「以每個元素為 max / min 的 subarray」→ monotonic stack + contribution method。</li>
+          <li>「<span className="hl">sliding window 極值</span>」→ monotonic deque。</li>
+          <li>DP 轉移中 <code className="inline">min / max(dp[j])</code>，j 有 range 限制 → monotonic deque 優化。</li>
+          <li>直覺 O(n²) 會 TLE，且每個元素「被誰取代」有規律 → 試試 monotonic 結構。</li>
+        </ul>
+      </div>
+
+      <div className="card">
+        <div className="card-title"><span className="dot" style={{background:'var(--green)'}}></span>寫題 SOP</div>
+        <ol>
+          <li><b>判定 direction</b>：找 right-side 通常從 right 掃（查 top）；找 left-side 從 left 掃。或反過來寫成「我結算誰」。</li>
+          <li><b>判定 monotonic 方向</b>：找 greater → decreasing stack；找 smaller → increasing stack。</li>
+          <li><b>選 <code className="inline">&lt;</code> 或 <code className="inline">&lt;=</code></b>：strictly greater 用 <code className="inline">&lt;=</code> pop；允許相等的答案用 <code className="inline">&lt;</code>。</li>
+          <li><b>存 index 還是 value？</b>若需要 distance / width → 存 index。</li>
+          <li><b>要不要 sentinel？</b>Histogram 類題目在右端加 0 能一次清空 stack。</li>
+        </ol>
+      </div>
+
+      <div className="card">
+        <div className="card-title"><span className="dot" style={{background:'var(--purple)'}}></span>常用 C++ snippet</div>
+        <Code>{`stack<int> stk;
+deque<int> dq;
+
+// pop while condition not satisfied
+while (!stk.empty() && nums[stk.top()] <= nums[i]) stk.pop();
+
+// deque three-step for sliding window
+while (!dq.empty() && dq.front() <= i - k)    dq.pop_front();
+while (!dq.empty() && nums[dq.back()] < nums[i]) dq.pop_back();
+dq.push_back(i);
+
+// sentinel tricks
+vector<int> h = heights;
+h.push_back(0);                              // right sentinel
+h.insert(h.begin(), 0); h.push_back(0);      // both sides`}</Code>
+      </div>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('app')).render(<App/>);
+</script>
+</body>
+</html>
