@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LC 10 — Regex Matching DP 動畫教學</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0e14;--bg2:#0f1319;--surface:#151a23;--surface2:#1a2030;
+    --border:#252d3a;--border-bright:#3a4560;
+    --text:#c8d0dc;--text-dim:#6b7a90;--text-bright:#e8edf5;
+    --accent:#59c2ff;--accent-dim:#1a3a55;
+    --green:#7fd962;--green-dim:#1a3520;
+    --orange:#ffb454;--orange-dim:#3a2a15;
+    --red:#ff6b6b;--red-dim:#3a1a1a;
+    --purple:#c792ea;--purple-dim:#2a1a3a;
+    --yellow:#ffd580;--cyan:#95e6cb;--pink:#f07178;
+    --radius:10px;--shadow:0 4px 24px rgba(0,0,0,.4);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'DM Sans','Noto Sans TC',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;min-height:100vh;overflow-x:hidden;}
+  body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;}
+  .app{max-width:1100px;margin:0 auto;padding:36px 22px 100px;}
+
+  header{text-align:center;margin-bottom:28px;}
+  header .eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--accent);margin-bottom:10px;}
+  header h1{font-family:'Instrument Serif',serif;font-size:clamp(28px,4.5vw,44px);font-weight:400;color:var(--text-bright);line-height:1.2;margin-bottom:10px;}
+  header h1 em{font-style:italic;color:var(--yellow);}
+  header .subtitle{font-size:14px;color:var(--text-dim);max-width:680px;margin:0 auto;}
+
+  .tabs{display:flex;justify-content:center;gap:4px;margin-bottom:20px;flex-wrap:wrap;}
+  .tab{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 18px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);cursor:pointer;transition:all .2s;}
+  .tab:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-dim);}
+  .tab.active{background:var(--accent);color:var(--bg);border-color:var(--accent);}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);margin-bottom:16px;}
+  .card-title{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+  .card-title .dot{width:7px;height:7px;border-radius:50%;}
+
+  .sec-title{font-family:'Instrument Serif',serif;font-size:24px;color:var(--text-bright);margin-bottom:10px;display:flex;align-items:baseline;gap:10px;}
+  .sec-title .num{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent);background:var(--accent-dim);padding:4px 10px;border-radius:6px;letter-spacing:1px;}
+  .sec-sub{font-size:13.5px;color:var(--text-dim);margin-bottom:16px;}
+
+  .controls{display:flex;align-items:center;justify-content:center;gap:10px;margin:14px 0;flex-wrap:wrap;}
+  .btn{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;transition:all .2s;}
+  .btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-dim);}
+  .btn.primary{background:var(--accent);color:var(--bg);border-color:var(--accent);}
+  .btn.primary:hover{background:#7ad2ff;}
+  .btn:disabled{opacity:.35;cursor:not-allowed;}
+  .btn:disabled:hover{border-color:var(--border);color:var(--text);background:var(--surface);}
+  .speed{display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);}
+  .speed input[type=range]{width:80px;accent-color:var(--accent);}
+  .step-info{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);text-align:center;margin-bottom:6px;}
+
+  .narr{background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;font-size:13.5px;min-height:48px;}
+  .narr .hl{color:var(--accent);font-weight:600;}
+  .narr .grn{color:var(--green);font-weight:600;}
+  .narr .org{color:var(--orange);font-weight:600;}
+  .narr .red{color:var(--red);font-weight:600;}
+  .narr .pur{color:var(--purple);font-weight:600;}
+  .narr .ylw{color:var(--yellow);font-weight:600;}
+  .narr code{font-family:'JetBrains Mono',monospace;background:var(--bg2);padding:1px 6px;border-radius:4px;font-size:12px;color:var(--orange);}
+
+  .dp-wrap{display:flex;justify-content:center;margin:24px 0;position:relative;}
+  .dp-table{border-collapse:separate;border-spacing:3px;position:relative;}
+  .dp-table td{
+    font-family:'JetBrains Mono',monospace;font-weight:700;font-size:14px;
+    width:54px;height:48px;text-align:center;vertical-align:middle;
+    background:var(--surface2);border:1px solid var(--border);border-radius:6px;
+    transition:all .3s;position:relative;
+  }
+  .dp-table td.header{background:transparent;border:none;color:var(--text-dim);font-size:13px;}
+  .dp-table td.corner{background:transparent;border:none;}
+  .dp-table td.T{background:var(--green-dim);border-color:var(--green);color:var(--green);}
+  .dp-table td.F{background:var(--red-dim);border-color:var(--red);color:var(--red);opacity:.7;}
+  .dp-table td.cur{outline:3px solid var(--yellow);outline-offset:2px;box-shadow:0 0 20px rgba(255,213,128,.5);transform:scale(1.08);z-index:2;}
+  .dp-table td.src-a{outline:2px solid var(--accent);outline-offset:2px;}
+  .dp-table td.src-b{outline:2px solid var(--orange);outline-offset:2px;}
+  .dp-table td.src-c{outline:2px solid var(--purple);outline-offset:2px;}
+  .dp-table td.empty{color:var(--text-dim);font-size:11px;font-weight:500;}
+
+  .legend{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);}
+  .legend .item{display:flex;align-items:center;gap:6px;}
+  .legend .box{width:14px;height:14px;border-radius:3px;border:2px solid;}
+
+  .trans-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:16px 0;}
+  @media(max-width:780px){.trans-grid{grid-template-columns:1fr;}}
+  .trans-box{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;font-size:12.5px;}
+  .trans-box h4{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent);margin-bottom:8px;letter-spacing:1px;text-transform:uppercase;}
+  .trans-box.a h4{color:var(--accent);}
+  .trans-box.b h4{color:var(--orange);}
+  .trans-box.c h4{color:var(--purple);}
+  .trans-box.a{border-color:var(--accent);}
+  .trans-box.b{border-color:var(--orange);}
+  .trans-box.c{border-color:var(--purple);}
+  .trans-formula{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-bright);margin:8px 0;padding:8px 10px;background:var(--bg2);border-radius:5px;}
+
+  pre.code{background:#0d1017;border:1px solid var(--border);border-radius:8px;padding:16px 18px;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.7;color:#d4dce8;margin:10px 0;tab-size:4;}
+  pre.code .kw{color:#ff79c6;font-weight:600;}
+  pre.code .ty{color:#8be9fd;}
+  pre.code .fn{color:#50fa7b;}
+  pre.code .num{color:#ffb454;}
+  pre.code .str{color:#f1fa8c;}
+  pre.code .cm{color:#6272a4;font-style:italic;}
+  pre.code .cst{color:#bd93f9;font-weight:600;}
+
+  code.inline{font-family:'JetBrains Mono',monospace;background:var(--surface2);padding:2px 7px;border-radius:5px;font-size:12px;color:var(--orange);border:1px solid var(--border);}
+
+  table.info{width:100%;border-collapse:collapse;font-size:13px;}
+  table.info th,table.info td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);vertical-align:top;}
+  table.info th{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);font-weight:600;background:var(--bg2);}
+  table.info td.mono{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--orange);}
+  table.info tr:last-child td{border-bottom:none;}
+
+  .callout{background:var(--surface2);border-left:3px solid var(--accent);padding:12px 16px;border-radius:6px;margin:14px 0;font-size:13px;}
+  .callout.warn{border-left-color:var(--orange);}
+  .callout.good{border-left-color:var(--green);}
+  .callout.bad{border-left-color:var(--red);}
+  .callout.pur{border-left-color:var(--purple);}
+  .callout b{color:var(--text-bright);}
+
+  .hl{color:var(--accent);font-weight:600;}
+  .grn{color:var(--green);font-weight:600;}
+  .org{color:var(--orange);font-weight:600;}
+  .red{color:var(--red);font-weight:600;}
+  .ylw{color:var(--yellow);font-weight:600;}
+  .pur{color:var(--purple);font-weight:600;}
+
+  ul,ol{padding-left:22px;}
+  li{margin-bottom:6px;font-size:13.5px;}
+
+  .str-display{display:flex;gap:4px;justify-content:center;margin:10px 0;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:15px;align-items:center;}
+  .str-display .chr{min-width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:5px;background:var(--surface2);border:1px solid var(--border);}
+  .str-display .chr.p{color:var(--purple);border-color:var(--purple);}
+  .str-display .chr.s{color:var(--accent);border-color:var(--accent);}
+  .str-display .label{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);margin-right:8px;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="eyebrow">LC 10 · Regular Expression Matching · Hard</div>
+    <h1>Regex Matching <em>DP 動畫教學</em></h1>
+    <p class="subtitle">逐格填表動畫 + 聚焦 <span class="ylw">"one or more"</span> 轉移為什麼是 <code style="font-family:inherit">dp[i][j] = dp[i-1][j]</code>。</p>
+  </header>
+
+  <div id="app"></div>
+</div>
+
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.2/babel.min.js"></script>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+/* ========== C++ highlighter ==========
+   marker format: MKzzzNzzMK where N is the index, zz are letters so that
+   \b(\d+)\b inside the marker has no word boundary and won't match. */
+const KW = ['int','void','auto','const','return','if','else','while','for','do','bool','char','public','class','static','struct'];
+const TY = ['vector','string','pair'];
+const CST = ['true','false','nullptr','NULL'];
+
+function hlCpp(code){
+  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const stash=[];
+  const keep = h => { const n = stash.length; stash.push(h); return 'MKzz'+n+'zzMK'; };
+
+  let s = esc(code);
+  s = s.replace(/\/\/[^\n]*/g, m => keep('<span class="cm">'+m+'</span>'));
+  s = s.replace(/"(?:\\.|[^"\\])*"/g, m => keep('<span class="str">'+m+'</span>'));
+  s = s.replace(/'(?:\\.|[^'\\])*'/g, m => keep('<span class="str">'+m+'</span>'));
+  s = s.replace(new RegExp('\\b('+KW.join('|')+')\\b','g'), '<span class="kw">$1</span>');
+  s = s.replace(new RegExp('\\b('+TY.join('|')+')\\b','g'), '<span class="ty">$1</span>');
+  s = s.replace(new RegExp('\\b('+CST.join('|')+')\\b','g'), '<span class="cst">$1</span>');
+  s = s.replace(/\b(\d+)\b/g, '<span class="num">$1</span>');
+  s = s.replace(/\b([a-zA-Z_]\w*)(?=\s*\()/g, '<span class="fn">$1</span>');
+  s = s.replace(/MKzz(\d+)zzMK/g, (_,i)=>stash[+i]);
+  return s;
+}
+function Code({children}){ return <pre className="code" dangerouslySetInnerHTML={{__html:hlCpp(children)}}/>; }
+
+/* ========== DP simulator ========== */
+function simDP(s, p){
+  const m = s.length, n = p.length;
+  const dp = Array.from({length:m+1}, ()=>Array(n+1).fill(null));
+  const steps = [];
+  const snap = (cur, srcs, narr) => steps.push({ dp: dp.map(r=>r.slice()), cur, srcs: srcs||[], narr });
+
+  dp[0][0] = true;
+  snap([0,0], [], '<b>Base:</b> <code>dp[0][0] = true</code>。空字串 match 空 pattern。');
+
+  for(let j=1;j<=n;j++){
+    if(p[j-1]==='*'){
+      dp[0][j] = dp[0][j-2];
+      snap([0,j], [{rc:[0,j-2],kind:'b'}],
+        '<code>dp[0]['+j+']</code>：p['+(j-1)+']=\'*\'，把 <code>"'+p[j-2]+'*"</code> 當<span class="org">零次</span>出現 → 看 <code>dp[0]['+(j-2)+']</code> = <span class="'+(dp[0][j-2]?'grn':'red')+'">'+dp[0][j-2]+'</span>。');
+    } else {
+      dp[0][j] = false;
+      snap([0,j], [],
+        '<code>dp[0]['+j+']</code>：p['+(j-1)+']=\''+p[j-1]+'\' 不是 \'*\'，沒辦法 match 空字串 → <span class="red">false</span>。');
+    }
+  }
+
+  for(let i=1;i<=m;i++){
+    dp[i][0] = false;
+    snap([i,0], [], '<code>dp['+i+'][0] = false</code>：非空 s 不可能 match 空 pattern。');
+
+    for(let j=1;j<=n;j++){
+      const sc = s[i-1], pc = p[j-1];
+      if(pc==='*'){
+        const prev = p[j-2];
+        const zero = dp[i][j-2];
+        const matchChar = (prev===sc || prev==='.');
+        const more = matchChar ? dp[i-1][j] : false;
+        dp[i][j] = zero || more;
+
+        let narr = '<span class="hl">dp['+i+']['+j+']</span>：p['+(j-1)+']=\'*\'（配 p['+(j-2)+']=\''+prev+'\'）。';
+        const srcs=[];
+        narr += ' <span class="org">[Case B zero]</span> <code>dp['+i+']['+(j-2)+']</code>=<span class="'+(zero?'grn':'red')+'">'+zero+'</span>。';
+        srcs.push({rc:[i,j-2],kind:'b'});
+        if(matchChar){
+          narr += ' <span class="pur">[Case C one-more]</span> s['+(i-1)+']=\''+sc+'\' 能 match \''+prev+'\' → 看 <code>dp['+(i-1)+']['+j+']</code>=<span class="'+(more?'grn':'red')+'">'+more+'</span>（「吃掉 s 的一個字，pattern 保持同樣的 <code>'+prev+'*</code>」）。';
+          srcs.push({rc:[i-1,j],kind:'c'});
+        } else {
+          narr += ' s['+(i-1)+']=\''+sc+'\' 不 match \''+prev+'\'，無 one-more。';
+        }
+        narr += ' 結果 <code>dp['+i+']['+j+']</code> = <span class="'+(dp[i][j]?'grn':'red')+'">'+dp[i][j]+'</span>。';
+        snap([i,j], srcs, narr);
+      } else {
+        const matchChar = (pc===sc || pc==='.');
+        if(matchChar){
+          dp[i][j] = dp[i-1][j-1];
+          snap([i,j], [{rc:[i-1,j-1],kind:'a'}],
+            '<span class="hl">dp['+i+']['+j+']</span>：p['+(j-1)+']=\''+pc+'\''+(pc==='.'?' (wildcard)':'')+' match s['+(i-1)+']=\''+sc+'\' → 看 <code>dp['+(i-1)+']['+(j-1)+']</code>=<span class="'+(dp[i-1][j-1]?'grn':'red')+'">'+dp[i-1][j-1]+'</span>。');
+        } else {
+          dp[i][j] = false;
+          snap([i,j], [],
+            '<span class="hl">dp['+i+']['+j+']</span>：p['+(j-1)+']=\''+pc+'\' 不 match s['+(i-1)+']=\''+sc+'\' → <span class="red">false</span>。');
+        }
+      }
+    }
+  }
+
+  snap([-1,-1], [],
+    '完成！最終 <code>dp['+m+']['+n+']</code> = <span class="'+(dp[m][n]?'grn':'red')+'">'+dp[m][n]+'</span>，表示 "'+s+'" '+(dp[m][n]?'match':"doesn't match")+' "'+p+'"。');
+  return steps;
+}
+
+/* ========== DP Table renderer ========== */
+function DPTable({s, p, step}){
+  const {dp, cur, srcs} = step;
+  const m = s.length, n = p.length;
+  const isSrc = (i,j) => srcs.find(x=>x.rc[0]===i && x.rc[1]===j);
+
+  return (
+    <div className="dp-wrap">
+      <table className="dp-table">
+        <tbody>
+          <tr>
+            <td className="corner"></td>
+            <td className="header">""</td>
+            {Array.from({length:n}).map((_,j)=>(
+              <td key={j} className="header" style={{color:p[j]==='*'?'var(--yellow)':p[j]==='.'?'var(--cyan)':'var(--purple)'}}>
+                {p[j]}
+              </td>
+            ))}
+          </tr>
+          {Array.from({length:m+1}).map((_,i)=>(
+            <tr key={i}>
+              <td className="header" style={{color:i===0?'var(--text-dim)':'var(--accent)'}}>
+                {i===0?'""':s[i-1]}
+              </td>
+              {Array.from({length:n+1}).map((_,j)=>{
+                const v = dp[i][j];
+                const isCur = cur[0]===i && cur[1]===j;
+                const src = isSrc(i,j);
+                let cls='';
+                if(v===true) cls='T';
+                else if(v===false) cls='F';
+                else cls='empty';
+                if(isCur) cls+=' cur';
+                if(src) cls+=' src-'+src.kind;
+                return (
+                  <td key={j} className={cls}>
+                    {v===true?'T':v===false?'F':'·'}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/* ========== Player ========== */
+function Player({steps, speed, setSpeed, render}){
+  const [i,setI] = useState(0);
+  const [playing,setPlaying] = useState(false);
+  const iref = useRef(i); iref.current = i;
+  useEffect(()=>{
+    if(!playing) return;
+    const t = setTimeout(()=>{
+      if(iref.current < steps.length-1) setI(iref.current+1);
+      else setPlaying(false);
+    }, 1400 - speed*120);
+    return ()=>clearTimeout(t);
+  },[i,playing,speed,steps.length]);
+  useEffect(()=>{setI(0);setPlaying(false);},[steps]);
+
+  const s = steps[i];
+  return (
+    <>
+      <div className="step-info">Step {i+1} / {steps.length}</div>
+      <div className="narr" dangerouslySetInnerHTML={{__html:s.narr}}/>
+      {render(s)}
+      <div className="legend">
+        <div className="item"><div className="box" style={{borderColor:'var(--yellow)',background:'rgba(255,213,128,.2)'}}></div>current dp[i][j]</div>
+        <div className="item"><div className="box" style={{borderColor:'var(--accent)'}}></div>Case A (char/dot match)</div>
+        <div className="item"><div className="box" style={{borderColor:'var(--orange)'}}></div>Case B (* zero)</div>
+        <div className="item"><div className="box" style={{borderColor:'var(--purple)'}}></div>Case C (* one-or-more)</div>
+      </div>
+      <div className="controls">
+        <button className="btn" onClick={()=>{setI(0);setPlaying(false);}}>⟲ Reset</button>
+        <button className="btn" onClick={()=>{setPlaying(false);setI(Math.max(0,i-1));}} disabled={i===0}>← Prev</button>
+        <button className="btn primary" onClick={()=>{if(i>=steps.length-1)setI(0);setPlaying(!playing);}}>
+          {playing?'❚❚ Pause':'▶ Play'}
+        </button>
+        <button className="btn" onClick={()=>{setPlaying(false);setI(Math.min(steps.length-1,i+1));}} disabled={i===steps.length-1}>Next →</button>
+        <div className="speed">Speed<input type="range" min="1" max="10" value={speed} onChange={e=>setSpeed(+e.target.value)}/>{speed}x</div>
+      </div>
+    </>
+  );
+}
+
+/* ========== Components ========== */
+
+function Intro(){
+  return (
+    <>
+      <h2 className="sec-title"><span className="num">01</span>Problem — LC 10</h2>
+      <p className="sec-sub">實作支援 <code className="inline">.</code> 與 <code className="inline">*</code> 的 regex matching。</p>
+
+      <div className="card">
+        <div className="card-title"><span className="dot" style={{background:'var(--yellow)'}}></span>規則</div>
+        <ul>
+          <li><code className="inline">.</code> match 任意單一字元</li>
+          <li><code className="inline">x*</code> match <span className="org">零次或多次</span>前面那個字元 x（或 <code className="inline">.</code>）</li>
+          <li><code className="inline">*</code> 不會單獨出現，一定跟在某個字元後面（例如 <code className="inline">a*</code>、<code className="inline">.*</code>）</li>
+          <li>要判斷整個 s 能不能被 p match（不是 substring，<span className="hl">完全 match</span>）</li>
+        </ul>
+
+        <table className="info" style={{marginTop:14}}>
+          <thead><tr><th>s</th><th>p</th><th>result</th><th>reason</th></tr></thead>
+          <tbody>
+            <tr><td className="mono">"aa"</td><td className="mono">"a"</td><td><span className="red">false</span></td><td>長度不對</td></tr>
+            <tr><td className="mono">"aa"</td><td className="mono">"a*"</td><td><span className="grn">true</span></td><td>a* match 兩個 a</td></tr>
+            <tr><td className="mono">"ab"</td><td className="mono">".*"</td><td><span className="grn">true</span></td><td>.* match 任意字串</td></tr>
+            <tr><td className="mono">"aab"</td><td className="mono">"c*a*b"</td><td><span className="grn">true</span></td><td>c* 零次, a* 兩次, b 一次</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div className="card">
+        <div className="card-title"><span className="dot" style={{background:'var(--accent)'}}></span>DP 定義</div>
+        <div className="trans-formula" style={{fontSize:15,padding:'12px 14px'}}>
+          <span className="hl">dp[i][j]</span> = s 的前 i 個字元 能否 match p 的前 j 個字元
+        </div>
+        <div style={{fontSize:13.5,marginTop:10}}>
+          答案：<code className="inline">dp[s.size()][p.size()]</code>
+        </div>
+        <div className="callout good" style={{marginTop:14}}>
+          <b>Base cases:</b>
+          <ul style={{marginTop:6}}>
+            <li><code className="inline">dp[0][0] = true</code>（空 match 空）</li>
+            <li><code className="inline">dp[i][0] = false</code>（非空 s 不能 match 空 p）</li>
+            <li><code className="inline">dp[0][j]</code>：只有 p 形如 <code className="inline">a*b*c*</code> 才能 match 空 s。公式：若 <code className="inline">p[j-1]=='*'</code> 則 <code className="inline">dp[0][j] = dp[0][j-2]</code>。</li>
+          </ul>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function Transitions(){
+  return (
+    <>
+      <h2 className="sec-title"><span className="num">02</span>三個 Transition</h2>
+      <p className="sec-sub">計算 <code className="inline">dp[i][j]</code> 時，看 <code className="inline">p[j-1]</code> 是什麼字元，分三類處理。</p>
+
+      <div className="trans-grid">
+        <div className="trans-box a">
+          <h4>Case A · char / dot match</h4>
+          <p>若 <code className="inline">p[j-1]</code> 是普通字元或 <code className="inline">.</code>，且能 match <code className="inline">s[i-1]</code>：</p>
+          <div className="trans-formula"><span className="hl">dp[i][j] = dp[i-1][j-1]</span></div>
+          <p style={{color:'var(--text-dim)'}}>「兩邊都往前退一格」——s 和 p 各消耗一個字元。</p>
+        </div>
+
+        <div className="trans-box b">
+          <h4>Case B · <span className="ylw">x*</span> 當「zero」</h4>
+          <p>若 <code className="inline">p[j-1]=='*'</code>，把 <code className="inline">"x*"</code> 當作出現 0 次、<span className="org">整組跳過</span>：</p>
+          <div className="trans-formula"><span className="org">dp[i][j] = dp[i][j-2]</span></div>
+          <p style={{color:'var(--text-dim)'}}>s 不動，p 往前退 2 格（跳過 x 和 *）。</p>
+        </div>
+
+        <div className="trans-box c">
+          <h4>Case C · <span className="ylw">x*</span> 當「one or more」</h4>
+          <p>若 <code className="inline">p[j-1]=='*'</code>，且 <code className="inline">s[i-1]</code> 能 match <code className="inline">p[j-2]</code>（那個 x）：</p>
+          <div className="trans-formula"><span className="pur">dp[i][j] = dp[i-1][j]</span></div>
+          <p style={{color:'var(--text-dim)'}}>s 往前退 1 格、<span className="ylw">p 不動</span>——這就是關鍵！</p>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-title"><span className="dot" style={{background:'var(--green)'}}></span>最終公式</div>
+        <Code>{`// p[j-1] is a letter or '.'
+if (p[j-1] == '.' || p[j-1] == s[i-1])
+    dp[i][j] = dp[i-1][j-1];                     // Case A
+
+// p[j-1] == '*'
+else if (p[j-1] == '*') {
+    dp[i][j] = dp[i][j-2];                       // Case B: zero occurrence
+    if (p[j-2] == '.' || p[j-2] == s[i-1])
+        dp[i][j] = dp[i][j] || dp[i-1][j];       // Case C: one-or-more
+}`}</Code>
+
+        <div className="callout warn">
+          <b>Case B 與 Case C 是 OR 的關係：</b>只要其中一個成立 <code className="inline">dp[i][j]</code> 就 true。兩種可能都要試（"x*" 到底吃 0 次還是 &gt;= 1 次）。
+        </div>
+      </div>
+    </>
+  );
+}
+
+function Rolling({steps, speed, setSpeed}){
+  return (
+    <>
+      <h2 className="sec-title"><span className="num">04</span>"One or more" 深入：為什麼是 <em>dp[i-1][j]</em>？</h2>
+      <p className="sec-sub">這是最多人卡住的地方。我們用 s = "aaaa", p = "a*" 看 <span className="hl">垂直 rolling</span> 的現象。</p>
+
+      <div className="card">
+        <div className="card-title"><span className="dot" style={{background:'var(--yellow)'}}></span>直覺建立</div>
+        <p>假設你正在算 <code className="inline">dp[i][j]</code>，而 <code className="inline">p[j-1]='*'</code>、<code className="inline">p[j-2]='a'</code>，也就是 pattern 的結尾是 <span className="ylw">"a*"</span>。</p>
+
+        <p style={{marginTop:10}}>問題：s 的前 i 個字元能不能 match p 的前 j 個字元？</p>
+
+        <p style={{marginTop:10}}>拆開想——如果 <code className="inline">s[i-1]='a'</code>（能 match 那個 <code className="inline">'a'</code>），那就可以：</p>
+
+        <div className="callout pur">
+          <b>把 s[i-1] 這個 'a' <span className="ylw">塞給 a* 吃掉</span>，剩下的問題是：</b><br/>
+          「s 的前 <span className="hl">i-1</span> 個字元能不能 match <span className="hl">同樣的 p[0..j-1]</span>（包含那個 a*）？」<br/>
+          這就是 <span className="pur">dp[i-1][j]</span>。
+        </div>
+
+        <p style={{marginTop:14,fontSize:13.5}}>
+          關鍵觀念：<span className="ylw">a*</span> 像一個<span className="hl">貪食怪</span>，能吃任意多個 'a'。每吃掉一個 s 的 'a'，它<span className="grn">還是同一個 a*</span>——所以 pattern 指標 <span className="pur">j 不動</span>，只有 s 指標 <span className="hl">i</span> 退一格。
+        </p>
+      </div>
+
+      <div className="card">
+        <div className="card-title"><span className="dot" style={{background:'var(--accent)'}}></span>圖解：一次「吃掉一個 a」</div>
+
+        <div className="str-display">
+          <span className="label">s:</span>
+          <span className="chr s">a</span>
+          <span className="chr s">a</span>
+          <span className="chr s">a</span>
+          <span className="chr s" style={{outline:'2px solid var(--yellow)'}}>a</span>
+          <span style={{color:'var(--text-dim)',marginLeft:10,fontSize:12}}>← 吃掉這個</span>
+        </div>
+        <div style={{textAlign:'center',color:'var(--text-dim)',fontSize:12,margin:'4px 0'}}>↓</div>
+        <div className="str-display">
+          <span className="label">剩：</span>
+          <span className="chr s">a</span>
+          <span className="chr s">a</span>
+          <span className="chr s">a</span>
+          <span style={{color:'var(--text-dim)',marginLeft:10,fontSize:12}}>要 match p = "a*"（不變）</span>
+        </div>
+        <div style={{textAlign:'center',fontSize:13,color:'var(--text-dim)',marginTop:14}}>
+          這就是 <code className="inline">dp[4][2] = dp[3][2]</code>：
+          <span className="hl"> i 退一</span>、<span className="pur">j 不動</span>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-title"><span className="dot" style={{background:'var(--green)'}}></span>動畫：垂直 rolling 效果</div>
+        <p style={{fontSize:13.5,marginBottom:10}}>觀察動畫中，<code className="inline">dp[i][2]</code> 那一行（* 那一列）的 T 怎麼「往下捲」。每算一格就靠 <span className="pur">上一格</span> 傳遞下來。</p>
+        <Player steps={steps} speed={speed} setSpeed={setSpeed}
+          render={step=><DPTable s="aaaa" p="a*" step={step}/>}/>
+      </div>
+
+      <div className="card">
+        <div className="card-title"><span className="dot" style={{background:'var(--purple)'}}></span>對照三種配置</div>
+        <table className="info">
+          <thead><tr><th>Case</th><th>移動</th><th>直覺</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span className="hl">A</span> dp[i-1][j-1]</td>
+              <td className="mono">i↓ j↓</td>
+              <td>s 和 p 各消耗一個字元（普通 match）</td>
+            </tr>
+            <tr>
+              <td><span className="org">B</span> dp[i][j-2]</td>
+              <td className="mono">i—　j↓↓</td>
+              <td>x* 當 0 次，整組跳過。s 沒被消耗。</td>
+            </tr>
+            <tr>
+              <td><span className="pur">C</span> dp[i-1][j]</td>
+              <td className="mono">i↓　j—</td>
+              <td>x* 再多吃一個。p 不動（a* 還在）。</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div className="callout good">
+          <b>常見誤解糾正：</b>
+          <ul style={{marginTop:6}}>
+            <li><span className="red">❌</span> 「one-or-more 應該是 <code className="inline">dp[i-1][j-2]</code>」—— 這只吃「剛好 1 個」，漏掉吃 2、3、4... 次的情況。</li>
+            <li><span className="red">❌</span> 「one-or-more 應該是 <code className="inline">dp[i-1][j-1]</code>」—— 這是普通 match 的公式，跟 '*' 沒關係。</li>
+            <li><span className="grn">✓</span> 正確是 <code className="inline">dp[i-1][j]</code>：每一層 i 遞增都讓 a* 再吃一個，<span className="ylw">遞迴地</span>處理 1 次、2 次、3 次...。</li>
+          </ul>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-title"><span className="dot" style={{background:'var(--cyan)'}}></span>另一個角度：展開遞迴</div>
+        <p style={{fontSize:13.5}}>把 <code className="inline">dp[4][2]</code> 一路展開，你會看到 <code className="inline">dp[i-1][j]</code> 的鏈：</p>
+        <pre className="code" style={{fontSize:13}}>{`dp[4][2] ← dp[3][2]  (a* 吃掉 s[3])
+         ← dp[2][2]  (a* 吃掉 s[2])
+         ← dp[1][2]  (a* 吃掉 s[1])
+         ← dp[0][2]  (a* 吃掉 s[0])  = true  ← 終於! a* 當 0 次 match ""`}</pre>
+        <p style={{fontSize:13.5,marginTop:10}}>
+          所以「one-or-more」本質上是一個<span className="hl">鏈</span>：只要最底下有一格 true（通常是 Case B 的「a* 當 0 次」），整條鏈就都 true。
+        </p>
+      </div>
+    </>
+  );
+}
+
+function CodeSection(){
+  return (
+    <>
+      <h2 className="sec-title"><span className="num">05</span>完整 C++ 實作</h2>
+
+      <div className="card">
+        <div className="card-title"><span className="dot" style={{background:'var(--accent)'}}></span>Bottom-up DP（推薦）</div>
+        <Code>{`class Solution {
+public:
+    bool isMatch(string s, string p) {
+        int m = s.size(), n = p.size();
+        // dp[i][j] = first i chars of s match first j chars of p
+        vector<vector<bool>> dp(m + 1, vector<bool>(n + 1, false));
+
+        dp[0][0] = true;
+
+        // empty s vs pattern: only "x*x*..." can match empty
+        for (int j = 2; j <= n; ++j)
+            if (p[j-1] == '*') dp[0][j] = dp[0][j-2];
+
+        for (int i = 1; i <= m; ++i) {
+            for (int j = 1; j <= n; ++j) {
+                if (p[j-1] == '*') {
+                    // Case B: treat "x*" as zero occurrence
+                    dp[i][j] = dp[i][j-2];
+                    // Case C: one-or-more, if s[i-1] matches p[j-2]
+                    if (p[j-2] == '.' || p[j-2] == s[i-1])
+                        dp[i][j] = dp[i][j] || dp[i-1][j];
+                }
+                else if (p[j-1] == '.' || p[j-1] == s[i-1]) {
+                    // Case A: plain match, both move back
+                    dp[i][j] = dp[i-1][j-1];
+                }
+                // else: dp[i][j] stays false
+            }
+        }
+        return dp[m][n];
+    }
+};`}</Code>
+
+        <div className="callout">
+          <b>Complexity:</b> Time O(mn), Space O(mn)。可用 rolling array 降到 O(n)。
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-title"><span className="dot" style={{background:'var(--green)'}}></span>Top-down Memoization（遞迴）</div>
+        <Code>{`class Solution {
+    vector<vector<int>> memo;  // -1 unset, 0 false, 1 true
+    string s, p;
+
+    bool solve(int i, int j) {
+        if (j == (int)p.size()) return i == (int)s.size();
+        if (memo[i][j] != -1) return memo[i][j];
+
+        bool firstMatch = i < (int)s.size() &&
+                          (p[j] == '.' || p[j] == s[i]);
+
+        bool ans;
+        if (j + 1 < (int)p.size() && p[j+1] == '*') {
+            // zero occurrence  OR  one-or-more
+            ans = solve(i, j+2) || (firstMatch && solve(i+1, j));
+        } else {
+            ans = firstMatch && solve(i+1, j+1);
+        }
+        return memo[i][j] = ans;
+    }
+
+public:
+    bool isMatch(string s_, string p_) {
+        s = s_; p = p_;
+        memo.assign(s.size()+1, vector<int>(p.size()+1, -1));
+        return solve(0, 0);
+    }
+};`}</Code>
+
+        <div className="callout pur">
+          <b>對照 Bottom-up：</b>遞迴版的 <code className="inline">solve(i+1, j)</code> 就是 bottom-up 的 <code className="inline">dp[i-1][j]</code>——「吃一個 s 字元，保持同樣 pattern」。兩種寫法的「one-or-more」語意完全相同。
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* ========== App ========== */
+const TOPICS = [
+  {key:'intro',  label:'① Problem'},
+  {key:'trans',  label:'② 三個 Transition'},
+  {key:'main',   label:'③ 完整範例動畫'},
+  {key:'rolling',label:'④ One-or-more 深入'},
+  {key:'code',   label:'⑤ Code'},
+];
+
+function App(){
+  const [tab,setTab] = useState('intro');
+  const [speed,setSpeed] = useState(5);
+  const [mainSteps] = useState(()=>simDP('aab','c*a*b'));
+  const [rollSteps] = useState(()=>simDP('aaaa','a*'));
+
+  return (
+    <div>
+      <div className="tabs">
+        {TOPICS.map(t=>(
+          <button key={t.key} className={"tab"+(tab===t.key?" active":"")} onClick={()=>setTab(t.key)}>{t.label}</button>
+        ))}
+      </div>
+
+      {tab==='intro' && <Intro/>}
+      {tab==='trans' && <Transitions/>}
+      {tab==='main' && (
+        <div>
+          <h2 className="sec-title"><span className="num">03</span>完整範例：s = "aab"，p = "c*a*b"</h2>
+          <p className="sec-sub">逐格填表，每一格都顯示來源。黃框 = 正在計算，其他顏色 = 依賴來源。</p>
+          <div className="card">
+            <Player steps={mainSteps} speed={speed} setSpeed={setSpeed}
+              render={step=><DPTable s="aab" p="c*a*b" step={step}/>}/>
+          </div>
+        </div>
+      )}
+      {tab==='rolling' && <Rolling steps={rollSteps} speed={speed} setSpeed={setSpeed}/>}
+      {tab==='code' && <CodeSection/>}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('app')).render(<App/>);
+</script>
+</body>
+</html>

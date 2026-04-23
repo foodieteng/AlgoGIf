@@ -196,7 +196,7 @@ const CPP_CONSTS   = ['true','false','nullptr','NULL','INT_MAX','INT_MIN','LONG_
 function hlCpp(code){
   const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const stash = [];
-  const keep = (html) => { stash.push(html); return '\u0000' + (stash.length-1) + '\u0001'; };
+  const keep = (html) => { const n = stash.length; stash.push(html); return 'MKzz'+n+'zzMK'; };
 
   let s = esc(code);
 
@@ -221,7 +221,7 @@ function hlCpp(code){
   });
 
   // restore stashed tokens
-  s = s.replace(/\u0000(\d+)\u0001/g, (_,i)=>stash[+i]);
+  s = s.replace(/MKzz(\d+)zzMK/g, (_,i)=>stash[+i]);
   return s;
 }
 
