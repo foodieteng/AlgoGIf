@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8"/>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1100px;
+    background: #0c0e14;
+    color: #d8dee9;
+    font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+    padding: 50px 60px;
+    line-height: 1.8;
+    font-size: 15px;
+  }
+  h1 {
+    color: #d8dee9;
+    font-size: 22px;
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+  .sub {
+    color: #6a7385;
+    font-size: 13px;
+    margin-bottom: 28px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid #232a3a;
+  }
+  h2 {
+    color: #6a7385;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 28px 0 12px 0;
+  }
+
+  .item {
+    padding: 10px 0;
+    border-bottom: 1px solid #1a1d2a;
+    display: flex;
+    gap: 14px;
+  }
+  .num {
+    flex: 0 0 28px;
+    color: #4a5168;
+    font-family: ui-monospace, monospace;
+    font-size: 13px;
+    padding-top: 2px;
+  }
+  .body { flex: 1; }
+
+  /* 填空 — 用 code 風格 */
+  .blank {
+    display: inline-block;
+    min-width: 70px;
+    padding: 1px 10px;
+    margin: 0 3px;
+    background: #161825;
+    border: 1px dashed #3a4258;
+    border-radius: 3px;
+    font-family: ui-monospace, monospace;
+    font-size: 13px;
+    color: transparent;
+    text-align: center;
+  }
+  .blank::before {
+    content: attr(data-l);
+    color: #6a7385;
+  }
+
+  code {
+    background: #161825;
+    color: #dcdcaa;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-family: ui-monospace, monospace;
+    font-size: 13px;
+  }
+
+  /* 答案 */
+  .ans-blank {
+    display: inline-block;
+    padding: 1px 8px;
+    margin: 0 3px;
+    background: #1a2a1f;
+    color: #4ec9a8;
+    border-radius: 3px;
+    font-family: ui-monospace, monospace;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .key {
+    color: #6a7385;
+    font-family: ui-monospace, monospace;
+    font-size: 12px;
+    margin-right: 4px;
+  }
+
+  hr.cut {
+    border: none;
+    border-top: 1px dashed #3a4258;
+    margin: 36px 0 0 0;
+    position: relative;
+  }
+  hr.cut::after {
+    content: "ANSWERS";
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #0c0e14;
+    padding: 0 14px;
+    color: #6a7385;
+    font-size: 11px;
+    font-family: ui-monospace, monospace;
+    letter-spacing: 2px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Segment Tree 觀念填空</h1>
+<div class="sub">12 題 · 填空格內為 (a)(b)(c)... · 解答在下方</div>
+
+<h2>Questions</h2>
+
+<div class="item"><div class="num">01</div><div class="body">
+線段樹陣列大小一律開 <span class="blank" data-l="(a)"></span>，因為 N 不是 2 的次方時最壞需要這麼多節點。
+</div></div>
+
+<div class="item"><div class="num">02</div><div class="body">
+複雜度：build = <span class="blank" data-l="(a)"></span>　·　point update = <span class="blank" data-l="(b)"></span>　·　range query = <span class="blank" data-l="(c)"></span>
+</div></div>
+
+<div class="item"><div class="num">03</div><div class="body">
+查詢三種關係：不相交 → <span class="blank" data-l="(a)"></span>　·　完全包含 → <span class="blank" data-l="(b)"></span>　·　部分相交 → <span class="blank" data-l="(c)"></span>
+</div></div>
+
+<div class="item"><div class="num">04</div><div class="body">
+<code>pull(id)</code> 方向 = <span class="blank" data-l="(a)"></span>，<code>push(id)</code> 方向 = <span class="blank" data-l="(b)"></span>。口訣：<span class="blank" data-l="(c)"></span> push、<span class="blank" data-l="(d)"></span> pull。
+</div></div>
+
+<div class="item"><div class="num">05</div><div class="body">
+Type 2 節點 4 欄位：<code>sum</code> / <span class="blank" data-l="(a)"></span> / <span class="blank" data-l="(b)"></span> / <span class="blank" data-l="(c)"></span>。跨邊界 best = <span class="blank" data-l="(d)"></span>
+</div></div>
+
+<div class="item"><div class="num">06</div><div class="body">
+Type 2 的 query 必須回傳 <span class="blank" data-l="(a)"></span>，因為合併還需要 <span class="blank" data-l="(b)"></span> 和 <span class="blank" data-l="(c)"></span>。
+</div></div>
+
+<div class="item"><div class="num">07</div><div class="body">
+低地距離 (Type 3)：樹建在 <span class="blank" data-l="(a)"></span> 維度，按 <span class="blank" data-l="(b)"></span> 由小到大離線處理，對 v 查詢區間 = <span class="blank" data-l="(c)"></span>
+</div></div>
+
+<div class="item"><div class="num">08</div><div class="body">
+Type 4 Kth：比 <code>k</code> 與 <span class="blank" data-l="(a)"></span>（不是 <code>mid</code>）。往右走時 <code>k</code> 要 <span class="blank" data-l="(b)"></span>。
+</div></div>
+
+<div class="item"><div class="num">09</div><div class="body">
+Type 4 必須 <span class="blank" data-l="(a)"></span>-based，根節點 id = <span class="blank" data-l="(b)"></span>，否則 <code>2*0=0</code> 會 <span class="blank" data-l="(c)"></span>。
+</div></div>
+
+<div class="item"><div class="num">10</div><div class="body">
+Lazy：完全包含時只 <span class="blank" data-l="(a)"></span>，要進入子節點前先呼叫 <span class="blank" data-l="(b)"></span>。沒有 lazy 區間更新會退化為 <span class="blank" data-l="(c)"></span>。
+</div></div>
+
+<div class="item"><div class="num">11</div><div class="body">
+Type 5 雙 lazy 順序：先 <span class="blank" data-l="(a)"></span>、再 <span class="blank" data-l="(b)"></span>。push 時也照此順序，否則 <span class="blank" data-l="(c)"></span>。
+</div></div>
+
+<div class="item"><div class="num">12</div><div class="body">
+新 SET 進來時，必須把 <span class="blank" data-l="(a)"></span> 設為 <span class="blank" data-l="(b)"></span>，因為 SET 語意是 <span class="blank" data-l="(c)"></span>。
+</div></div>
+
+
+<hr class="cut">
+
+
+<h2>Answers</h2>
+
+<div class="item"><div class="num">01</div><div class="body">
+<span class="key">(a)</span><span class="ans-blank">4 * N</span>
+</div></div>
+
+<div class="item"><div class="num">02</div><div class="body">
+<span class="key">(a)</span><span class="ans-blank">O(N)</span>
+<span class="key">(b)</span><span class="ans-blank">O(log N)</span>
+<span class="key">(c)</span><span class="ans-blank">O(log N)</span>
+</div></div>
+
+<div class="item"><div class="num">03</div><div class="body">
+<span class="key">(a)</span><span class="ans-blank">INF / 0 (單位元)</span>
+<span class="key">(b)</span><span class="ans-blank">seg[id]</span>
+<span class="key">(c)</span><span class="ans-blank">遞迴左右子樹後合併</span>
+</div></div>
+
+<div class="item"><div class="num">04</div><div class="body">
+<span class="key">(a)</span><span class="ans-blank">子 → 父</span>
+<span class="key">(b)</span><span class="ans-blank">父 → 子</span>
+<span class="key">(c)</span><span class="ans-blank">下行</span>
+<span class="key">(d)</span><span class="ans-blank">回程</span>
+</div></div>
+
+<div class="item"><div class="num">05</div><div class="body">
+<span class="key">(a)</span><span class="ans-blank">pre</span>
+<span class="key">(b)</span><span class="ans-blank">suf</span>
+<span class="key">(c)</span><span class="ans-blank">best</span>
+<span class="key">(d)</span><span class="ans-blank">L.suf + R.pre</span>
+</div></div>
+
+<div class="item"><div class="num">06</div><div class="body">
+<span class="key">(a)</span><span class="ans-blank">整個 Node</span>
+<span class="key">(b)</span><span class="ans-blank">L.suf</span>
+<span class="key">(c)</span><span class="ans-blank">R.pre</span>
+</div></div>
+
+<div class="item"><div class="num">07</div><div class="body">
+<span class="key">(a)</span><span class="ans-blank">位置 (1 ~ 2N)</span>
+<span class="key">(b)</span><span class="ans-blank">值</span>
+<span class="key">(c)</span><span class="ans-blank">[l+1, r-1]</span>
+</div></div>
+
+<div class="item"><div class="num">08</div><div class="body">
+<span class="key">(a)</span><span class="ans-blank">seg[lc] (左子剩餘量)</span>
+<span class="key">(b)</span><span class="ans-blank">k -= seg[lc]</span>
+</div></div>
+
+<div class="item"><div class="num">09</div><div class="body">
+<span class="key">(a)</span><span class="ans-blank">1</span>
+<span class="key">(b)</span><span class="ans-blank">1</span>
+<span class="key">(c)</span><span class="ans-blank">死循環</span>
+</div></div>
+
+<div class="item"><div class="num">10</div><div class="body">
+<span class="key">(a)</span><span class="ans-blank">apply (打標記)</span>
+<span class="key">(b)</span><span class="ans-blank">push(id, L, R)</span>
+<span class="key">(c)</span><span class="ans-blank">O(N) per update → O(NQ)</span>
+</div></div>
+
+<div class="item"><div class="num">11</div><div class="body">
+<span class="key">(a)</span><span class="ans-blank">SET</span>
+<span class="key">(b)</span><span class="ans-blank">ADD</span>
+<span class="key">(c)</span><span class="ans-blank">SET 會覆蓋掉剛 push 的 ADD</span>
+</div></div>
+
+<div class="item"><div class="num">12</div><div class="body">
+<span class="key">(a)</span><span class="ans-blank">addTag</span>
+<span class="key">(b)</span><span class="ans-blank">0</span>
+<span class="key">(c)</span><span class="ans-blank">整段重置 X (覆蓋語意)</span>
+</div></div>
+
+</body>
+</html>

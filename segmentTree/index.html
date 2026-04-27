@@ -3,23 +3,844 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Lazy Propagation 動畫教學</title>
+<title>Segment Tree — 5 大題型模板 + Lazy 動畫</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: #0c0e14; }
+  body {
+    background: #0c0e14;
+    color: #d8dee9;
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    line-height: 1.6;
+  }
   button:disabled { opacity: 0.4; cursor: not-allowed !important; }
-  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: #161825; }
   ::-webkit-scrollbar-thumb { background: #2a2d40; border-radius: 3px; }
+
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 32px 20px 60px; }
+
+  h1 {
+    color: #58b3e0;
+    font-size: 28px;
+    margin-bottom: 6px;
+    border-bottom: 2px solid #1f2a3a;
+    padding-bottom: 12px;
+  }
+  h1 .sub { color: #6a7385; font-size: 15px; font-weight: normal; display: block; margin-top: 4px; }
+
+  /* Tab bar */
+  .tabs {
+    display: flex; gap: 4px; flex-wrap: wrap;
+    margin: 22px 0 0 0;
+    border-bottom: 1px solid #1f2a3a;
+  }
+  .tab {
+    padding: 10px 18px;
+    background: transparent;
+    color: #6a7385;
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+  .tab:hover { color: #d8dee9; }
+  .tab.active { color: #58b3e0; border-bottom-color: #58b3e0; }
+
+  /* Coloured banner per type */
+  .banner {
+    margin: 0;
+    padding: 14px 20px;
+    border-radius: 6px 6px 0 0;
+    font-weight: 700;
+    font-size: 17px;
+    color: #0c0e14;
+    letter-spacing: 0.4px;
+  }
+  .b1 { background: #58b3e0; }
+  .b2 { background: #d99a3e; }
+  .b3 { background: #b07cd9; }
+  .b4 { background: #4ec9a8; }
+  .b5 { background: #e06c75; }
+  .b-info { background: #4a5168; color: #e6e9f0; }
+  .b-merge { background: #d9c044; }
+
+  .section {
+    background: #161825;
+    border: 1px solid #232a3a;
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    padding: 20px 24px;
+    margin-bottom: 14px;
+  }
+  .section h3 { color: #e6e9f0; font-size: 15px; margin: 14px 0 8px 0; font-weight: 600; }
+  .section h3:first-child { margin-top: 0; }
+  .section p { color: #b7bdc9; font-size: 14px; margin: 6px 0; }
+  .section ul { padding-left: 22px; color: #b7bdc9; font-size: 14px; }
+  .section li { margin: 4px 0; }
+
+  /* Pills */
+  .tag {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 4px;
+    font-family: ui-monospace, "Cascadia Mono", "Fira Mono", monospace;
+    font-size: 12.5px;
+    font-weight: 600;
+    margin-right: 4px;
+    color: #0c0e14;
+  }
+  .t-sum  { background: #4ec9a8; }
+  .t-set  { background: #d99a3e; }
+  .t-add  { background: #4ec9a8; }
+  .t-pre  { background: #58b3e0; }
+  .t-suf  { background: #b07cd9; }
+  .t-best { background: #e06c75; }
+  .t-time { background: #4ec9a8; }
+  .t-space{ background: #58b3e0; }
+  .t-warn { background: #e06c75; }
+
+  /* Code */
+  pre {
+    background: #0a0c12;
+    border: 1px solid #1f2a3a;
+    border-radius: 6px;
+    padding: 16px 18px;
+    overflow-x: auto;
+    margin: 10px 0;
+  }
+  code {
+    font-family: ui-monospace, "Cascadia Mono", "Fira Mono", monospace;
+    font-size: 13.2px;
+    color: #d8dee9;
+  }
+  p code, td code, li code, .rule code {
+    background: #0c0e14;
+    padding: 1px 6px;
+    border-radius: 3px;
+    color: #dcdcaa;
+    font-size: 12.5px;
+  }
+  .kw { color: #c586c0; }
+  .ty { color: #4ec9b0; }
+  .fn { color: #dcdcaa; }
+  .nm { color: #9cdcfe; }
+  .st { color: #ce9178; }
+  .nu { color: #b5cea8; }
+  .cm { color: #6a7385; font-style: italic; }
+  .op { color: #d4d4d4; }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 13.5px; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid #232a3a; vertical-align: top; }
+  th { color: #58b3e0; font-weight: 600; background: #0f1320; }
+
+  /* Rule callout */
+  .rule {
+    background: #0f1320;
+    border-left: 3px solid #d9c044;
+    padding: 10px 14px;
+    margin: 10px 0;
+    border-radius: 0 4px 4px 0;
+    font-size: 13.5px;
+  }
+  .rule.warn { border-left-color: #e06c75; }
+  .rule.ok   { border-left-color: #4ec9a8; }
+  .rule b    { color: #e6e9f0; }
+
+  /* Unified spec box */
+  .unified {
+    background: #1a1f2e;
+    border: 1px solid #2a3142;
+    border-radius: 6px;
+    padding: 18px 22px;
+    margin-bottom: 8px;
+  }
+  .unified h2 { color: #d9c044; font-size: 16px; margin-bottom: 10px; }
+
+  .footer { text-align: center; color: #4a5168; font-size: 12px; margin-top: 40px; padding-top: 20px; border-top: 1px solid #1f2a3a; }
 </style>
 </head>
 <body>
-<div id="root"></div>
+<div class="wrap">
+
+<h1>
+  Segment Tree — 5 大題型模板總整理
+  <span class="sub">統一寫法 · 一致命名 · Type 5 附互動式 Lazy 動畫</span>
+</h1>
+
+<!-- Tab bar -->
+<div id="tabs" class="tabs"></div>
+
+<!-- Content panes injected by JS -->
+<div id="panes"></div>
+
+<div class="footer">Segment Tree · 5 Templates Cheat Sheet · Unified Style</div>
+</div>
+
+<!-- ============== Pane templates (hidden, copied into DOM by tabs) ============== -->
+<template id="pane-overview">
+  <div class="unified">
+    <h2>🧱 統一寫法規範（所有題型共用）</h2>
+    <table>
+      <tr><th style="width:170px">約定</th><th>規則</th></tr>
+      <tr><td>索引</td><td><b>1-based</b>，根節點 <code>id = 1</code></td></tr>
+      <tr><td>子節點巨集</td><td><code>#define lc (id*2)</code> &nbsp; <code>#define rc (id*2+1)</code></td></tr>
+      <tr><td>區間表示</td><td><code>[L, R]</code> 閉區間，中點 <code>M = L + (R-L) / 2</code></td></tr>
+      <tr><td>樹大小</td><td><code>4 * N</code></td></tr>
+      <tr><td>主呼叫</td><td><code>func(..., 1, n, 1)</code></td></tr>
+      <tr><td>函式分工</td>
+        <td>
+          <code>pull(id)</code> 子→父合併 ·
+          <code>push(id,L,R)</code> 父→子下推（Lazy 才有）·
+          <code>apply*(id,len,v)</code> 對單一節點施加（Lazy 才有）
+        </td></tr>
+      <tr><td>函式簽名</td>
+        <td>
+          <b>點更新：</b><code>update(p, v, L, R, id)</code><br>
+          <b>區間查詢：</b><code>query(l, r, L, R, id)</code><br>
+          <b>區間更新：</b><code>updateXxx(l, r, v, L, R, id)</code>（Lazy）<br>
+          <b>建樹：</b><code>build(L, R, id)</code><br>
+          <span style="color:#6a7385; font-size:12px;">統一規則：「目標參數 (p / l,r / v) → 節點區間 (L,R) → 節點編號 (id)」</span>
+        </td></tr>
+    </table>
+  </div>
+
+  <div class="banner b-info">📖 變數命名與意義（看 code 前必讀）</div>
+  <div class="section">
+    <table>
+      <tr><th style="width:90px">變數</th><th style="width:170px">意義</th><th>說明</th></tr>
+      <tr><td><code>n</code></td><td>原陣列大小</td><td>使用者輸入的元素個數，例如 <code>n=8</code> 表示 <code>a[1..8]</code></td></tr>
+      <tr><td><code>a[]</code></td><td>原始陣列</td><td>題目給的輸入資料，1-based 存放</td></tr>
+      <tr><td><code>seg[]</code></td><td>線段樹陣列</td><td>大小 <code>4*N</code>，<code>seg[id]</code> = 該節點的聚合值</td></tr>
+      <tr><td><code>id</code></td><td>當前節點編號</td><td>樹的位置，根 = 1。<code>id*2</code> 是左子，<code>id*2+1</code> 是右子</td></tr>
+      <tr><td><code>L, R</code></td><td>節點的責任區間</td><td>大寫。表示「<code>id</code> 這個節點代表 <code>a[L..R]</code> 的資訊」</td></tr>
+      <tr><td><code>M</code></td><td>區間中點</td><td><code>L + (R-L) / 2</code>。把 <code>[L,R]</code> 切成左 <code>[L,M]</code> 和右 <code>[M+1,R]</code></td></tr>
+      <tr><td><code>lc, rc</code></td><td>左右子節點編號</td><td>巨集：<code>lc = id*2</code>、<code>rc = id*2+1</code></td></tr>
+      <tr><td><code>l, r</code></td><td>查詢/更新目標區間</td><td>小寫。使用者要查的範圍，例如 <code>query(l=2, r=5)</code></td></tr>
+      <tr><td><code>p</code></td><td>單點位置</td><td>點更新時的目標索引，例如 <code>update(p=3, v=10)</code></td></tr>
+      <tr><td><code>v</code></td><td>新值</td><td>要更新成的值</td></tr>
+      <tr><td><code>k</code></td><td>第 K 個（Type 4）</td><td>名次參數，<code>kth(k=3)</code> 找剩餘元素中第 3 個</td></tr>
+    </table>
+    <div class="rule"><b>命名慣例：</b><code>L, R</code> <b>大寫 = 節點責任範圍</b>（不變）；<code>l, r</code> <b>小寫 = 使用者查詢範圍</b>（不變）。兩者在 query/update 函式中同時出現，務必區分。</div>
+  </div>
+
+  <div class="banner b-info">🌲 樹結構視覺化（n = 4 為例）</div>
+  <div class="section">
+    <p>線段樹是一棵<b>二元樹</b>，根節點 <code>id=1</code> 代表整個區間 <code>[1, n]</code>。每往下一層，區間就被切一半。</p>
+    <div style="text-align:center; margin:14px 0;">
+      <svg width="640" height="320" viewBox="0 0 640 320" style="max-width:100%;">
+        <!-- Edges -->
+        <line x1="320" y1="55" x2="160" y2="135" stroke="#3a4258" stroke-width="1.5"/>
+        <line x1="320" y1="55" x2="480" y2="135" stroke="#3a4258" stroke-width="1.5"/>
+        <line x1="160" y1="155" x2="80"  y2="235" stroke="#3a4258" stroke-width="1.5"/>
+        <line x1="160" y1="155" x2="240" y2="235" stroke="#3a4258" stroke-width="1.5"/>
+        <line x1="480" y1="155" x2="400" y2="235" stroke="#3a4258" stroke-width="1.5"/>
+        <line x1="480" y1="155" x2="560" y2="235" stroke="#3a4258" stroke-width="1.5"/>
+
+        <!-- Root -->
+        <rect x="270" y="20" width="100" height="50" rx="6" fill="#1a2a3a" stroke="#58b3e0" stroke-width="2"/>
+        <text x="320" y="40" text-anchor="middle" fill="#58b3e0" font-size="13" font-weight="700" font-family="ui-monospace,monospace">id=1</text>
+        <text x="320" y="58" text-anchor="middle" fill="#d8dee9" font-size="12" font-family="ui-monospace,monospace">[1, 4]</text>
+
+        <!-- Level 2 -->
+        <rect x="110" y="105" width="100" height="50" rx="6" fill="#1a2a3a" stroke="#4ec9a8" stroke-width="2"/>
+        <text x="160" y="125" text-anchor="middle" fill="#4ec9a8" font-size="13" font-weight="700" font-family="ui-monospace,monospace">id=2 (lc)</text>
+        <text x="160" y="143" text-anchor="middle" fill="#d8dee9" font-size="12" font-family="ui-monospace,monospace">[1, 2]</text>
+
+        <rect x="430" y="105" width="100" height="50" rx="6" fill="#1a2a3a" stroke="#d99a3e" stroke-width="2"/>
+        <text x="480" y="125" text-anchor="middle" fill="#d99a3e" font-size="13" font-weight="700" font-family="ui-monospace,monospace">id=3 (rc)</text>
+        <text x="480" y="143" text-anchor="middle" fill="#d8dee9" font-size="12" font-family="ui-monospace,monospace">[3, 4]</text>
+
+        <!-- Leaves -->
+        <rect x="40"  y="205" width="80" height="50" rx="6" fill="#0f1320" stroke="#3a4258" stroke-width="1.5"/>
+        <text x="80"  y="225" text-anchor="middle" fill="#6a7385" font-size="12" font-family="ui-monospace,monospace">id=4</text>
+        <text x="80"  y="243" text-anchor="middle" fill="#d8dee9" font-size="11" font-family="ui-monospace,monospace">[1,1] a[1]</text>
+
+        <rect x="200" y="205" width="80" height="50" rx="6" fill="#0f1320" stroke="#3a4258" stroke-width="1.5"/>
+        <text x="240" y="225" text-anchor="middle" fill="#6a7385" font-size="12" font-family="ui-monospace,monospace">id=5</text>
+        <text x="240" y="243" text-anchor="middle" fill="#d8dee9" font-size="11" font-family="ui-monospace,monospace">[2,2] a[2]</text>
+
+        <rect x="360" y="205" width="80" height="50" rx="6" fill="#0f1320" stroke="#3a4258" stroke-width="1.5"/>
+        <text x="400" y="225" text-anchor="middle" fill="#6a7385" font-size="12" font-family="ui-monospace,monospace">id=6</text>
+        <text x="400" y="243" text-anchor="middle" fill="#d8dee9" font-size="11" font-family="ui-monospace,monospace">[3,3] a[3]</text>
+
+        <rect x="520" y="205" width="80" height="50" rx="6" fill="#0f1320" stroke="#3a4258" stroke-width="1.5"/>
+        <text x="560" y="225" text-anchor="middle" fill="#6a7385" font-size="12" font-family="ui-monospace,monospace">id=7</text>
+        <text x="560" y="243" text-anchor="middle" fill="#d8dee9" font-size="11" font-family="ui-monospace,monospace">[4,4] a[4]</text>
+
+        <!-- Annotations -->
+        <text x="320" y="290" text-anchor="middle" fill="#6a7385" font-size="11" font-family="ui-monospace,monospace">每個節點的 [L, R] = 它「負責」的原陣列區間</text>
+        <text x="320" y="308" text-anchor="middle" fill="#6a7385" font-size="11" font-family="ui-monospace,monospace">葉節點 (L==R) 對應單一元素 a[L]</text>
+      </svg>
+    </div>
+  </div>
+
+  <div class="banner b-info">🎯 三種區間關係（query 的核心判斷）</div>
+  <div class="section">
+    <p>每次 query 時，比較<b>節點責任 <code>[L, R]</code></b> 與<b>使用者查詢 <code>[l, r]</code></b>，會落入這三種情況：</p>
+    <div style="display:flex; gap:12px; margin:16px 0; flex-wrap:wrap; justify-content:center;">
+
+      <!-- Case A -->
+      <div style="flex:1; min-width:280px; background:#0f1320; border:1px solid #232a3a; border-left:3px solid #6a7385; border-radius:6px; padding:12px;">
+        <div style="color:#6a7385; font-weight:700; font-size:13px; margin-bottom:8px;">A. 不相交</div>
+        <svg width="100%" height="80" viewBox="0 0 260 80">
+          <line x1="10" y1="60" x2="250" y2="60" stroke="#3a4258" stroke-width="1"/>
+          <rect x="20"  y="35" width="80" height="20" fill="#58b3e040" stroke="#58b3e0"/>
+          <text x="60"  y="30" text-anchor="middle" fill="#58b3e0" font-size="11" font-family="ui-monospace,monospace">[L, R]</text>
+          <rect x="160" y="35" width="80" height="20" fill="#d99a3e40" stroke="#d99a3e"/>
+          <text x="200" y="30" text-anchor="middle" fill="#d99a3e" font-size="11" font-family="ui-monospace,monospace">[l, r]</text>
+        </svg>
+        <div style="font-size:12px; color:#b7bdc9; margin-top:6px;">回傳「<b>單位元</b>」(min→INF, sum→0)</div>
+      </div>
+
+      <!-- Case B -->
+      <div style="flex:1; min-width:280px; background:#0f1320; border:1px solid #232a3a; border-left:3px solid #4ec9a8; border-radius:6px; padding:12px;">
+        <div style="color:#4ec9a8; font-weight:700; font-size:13px; margin-bottom:8px;">B. 完全包含</div>
+        <svg width="100%" height="80" viewBox="0 0 260 80">
+          <line x1="10" y1="60" x2="250" y2="60" stroke="#3a4258" stroke-width="1"/>
+          <rect x="80"  y="35" width="100" height="20" fill="#58b3e040" stroke="#58b3e0"/>
+          <text x="130" y="30" text-anchor="middle" fill="#58b3e0" font-size="11" font-family="ui-monospace,monospace">[L, R]</text>
+          <rect x="40"  y="38" width="180" height="14" fill="none" stroke="#d99a3e" stroke-width="2" stroke-dasharray="3,2"/>
+          <text x="130" y="76" text-anchor="middle" fill="#d99a3e" font-size="11" font-family="ui-monospace,monospace">[l, r]</text>
+        </svg>
+        <div style="font-size:12px; color:#b7bdc9; margin-top:6px;">直接回傳 <code>seg[id]</code>，<b>不再下探</b></div>
+      </div>
+
+      <!-- Case C -->
+      <div style="flex:1; min-width:280px; background:#0f1320; border:1px solid #232a3a; border-left:3px solid #d9c044; border-radius:6px; padding:12px;">
+        <div style="color:#d9c044; font-weight:700; font-size:13px; margin-bottom:8px;">C. 部分相交</div>
+        <svg width="100%" height="80" viewBox="0 0 260 80">
+          <line x1="10" y1="60" x2="250" y2="60" stroke="#3a4258" stroke-width="1"/>
+          <rect x="40"  y="35" width="120" height="20" fill="#58b3e040" stroke="#58b3e0"/>
+          <text x="100" y="30" text-anchor="middle" fill="#58b3e0" font-size="11" font-family="ui-monospace,monospace">[L, R]</text>
+          <rect x="100" y="38" width="120" height="14" fill="none" stroke="#d99a3e" stroke-width="2" stroke-dasharray="3,2"/>
+          <text x="160" y="76" text-anchor="middle" fill="#d99a3e" font-size="11" font-family="ui-monospace,monospace">[l, r]</text>
+        </svg>
+        <div style="font-size:12px; color:#b7bdc9; margin-top:6px;">遞迴左右子樹，把結果<b>合併</b></div>
+      </div>
+
+    </div>
+    <div class="rule"><b>記憶法：</b>看到節點時，先問「我跟查詢區間有沒有交集？」→ 沒有就回單位元、完全被包就回自己、否則切兩半繼續問。</div>
+  </div>
+
+  <div class="banner b-info">📑 題型總覽</div>
+  <div class="section">
+    <table>
+      <tr><th style="width:60px">#</th><th>題型</th><th>核心技巧</th><th>代表題</th></tr>
+      <tr><td>1</td><td>基礎區間查詢 (RMQ)</td><td>單一聚合值</td><td>min / sum</td></tr>
+      <tr><td>2</td><td>複雜狀態合併</td><td>Node + <code>merge()</code></td><td>Max Subarray Sum</td></tr>
+      <tr><td>3</td><td>位置維度計數</td><td>建在位置 + 按值離線</td><td>低地距離 f315</td></tr>
+      <tr><td>4</td><td>第 K 個查詢</td><td>樹上二分搜</td><td>List Removals</td></tr>
+      <tr><td>5</td><td>區間更新 (Lazy)</td><td>延遲標記 + <code>push()</code></td><td>CSES 1735</td></tr>
+    </table>
+  </div>
+
+  <div class="banner b-info">🗺️ 題型決策樹</div>
+  <div class="section">
+<pre><code>你的問題是什麼？
+│
+├─ 點更新 + 查單一聚合 (min/max/sum)        → Type 1
+├─ 點更新 + 查跨邊界複合資訊                 → Type 2
+├─ 「位置區間內，有多少個 X」                → Type 3
+├─ 「找第 K 個剩餘 / 第 K 小」                → Type 4
+└─ 區間更新 (Range Add / Range Set)         → Type 5</code></pre>
+  </div>
+
+  <div class="banner b-info">📌 通用易錯點總表</div>
+  <div class="section">
+    <table>
+      <tr><th>錯誤</th><th>修正</th></tr>
+      <tr><td>答案爆 int</td><td>用 <code>long long</code></td></tr>
+      <tr><td>樹陣列開太小</td><td>一律 <code>4 * N</code></td></tr>
+      <tr><td>葉節點忘記 <code>return</code></td><td>每個 <code>if (L == R)</code> 後必加</td></tr>
+      <tr><td>0-based / 1-based 混用</td><td>統一 1-based，根 = 1</td></tr>
+      <tr><td>Type 2 query 只回傳值</td><td>必須回傳整個 <code>Node</code></td></tr>
+      <tr><td>Type 5 忘記 push</td><td>進入子節點<b>前</b>必 push</td></tr>
+      <tr><td>Type 5 SET/ADD 順序顛倒</td><td>永遠 <b>SET 先，ADD 後</b></td></tr>
+      <tr><td>Type 5 SET 沒清 addTag</td><td><code>applySet</code> 必須 <code>addTag = 0</code></td></tr>
+    </table>
+  </div>
+</template>
+
+<template id="pane-t1">
+  <div class="banner b1">📦 TYPE 1 — 基礎區間查詢 (RMQ / Range Sum)</div>
+  <div class="section">
+    <p>每個節點只存<b>一個聚合值</b>。換掉 <code>pull()</code> 裡的 <code>min</code> 即可變 <code>max</code> / <code>sum</code> / <code>gcd</code>。</p>
+
+    <h3>程式碼</h3>
+<pre><code><span class="kw">const</span> <span class="ty">int</span> <span class="nm">INF</span> <span class="op">=</span> <span class="nu">1e9</span>;
+<span class="ty">int</span> n, a[MAXN], seg[<span class="nu">4</span> <span class="op">*</span> MAXN];
+
+<span class="kw">#define</span> lc (id <span class="op">*</span> <span class="nu">2</span>)
+<span class="kw">#define</span> rc (id <span class="op">*</span> <span class="nu">2</span> <span class="op">+</span> <span class="nu">1</span>)
+
+<span class="kw">void</span> <span class="fn">pull</span>(<span class="ty">int</span> id) {
+    seg[id] <span class="op">=</span> <span class="fn">min</span>(seg[lc], seg[rc]);
+}
+
+<span class="kw">void</span> <span class="fn">build</span>(<span class="ty">int</span> L, <span class="ty">int</span> R, <span class="ty">int</span> id) {
+    <span class="kw">if</span> (L <span class="op">==</span> R) { seg[id] <span class="op">=</span> a[L]; <span class="kw">return</span>; }
+    <span class="ty">int</span> M <span class="op">=</span> L <span class="op">+</span> (R <span class="op">-</span> L) <span class="op">/</span> <span class="nu">2</span>;
+    <span class="fn">build</span>(L, M, lc);
+    <span class="fn">build</span>(M <span class="op">+</span> <span class="nu">1</span>, R, rc);
+    <span class="fn">pull</span>(id);
+}
+
+<span class="kw">void</span> <span class="fn">update</span>(<span class="ty">int</span> p, <span class="ty">int</span> v, <span class="ty">int</span> L, <span class="ty">int</span> R, <span class="ty">int</span> id) {
+    <span class="kw">if</span> (L <span class="op">==</span> R) { seg[id] <span class="op">=</span> v; <span class="kw">return</span>; }
+    <span class="ty">int</span> M <span class="op">=</span> L <span class="op">+</span> (R <span class="op">-</span> L) <span class="op">/</span> <span class="nu">2</span>;
+    <span class="kw">if</span> (p <span class="op">&lt;=</span> M) <span class="fn">update</span>(p, v, L, M, lc);
+    <span class="kw">else</span>        <span class="fn">update</span>(p, v, M <span class="op">+</span> <span class="nu">1</span>, R, rc);
+    <span class="fn">pull</span>(id);
+}
+
+<span class="ty">int</span> <span class="fn">query</span>(<span class="ty">int</span> l, <span class="ty">int</span> r, <span class="ty">int</span> L, <span class="ty">int</span> R, <span class="ty">int</span> id) {
+    <span class="kw">if</span> (r <span class="op">&lt;</span> L <span class="op">||</span> R <span class="op">&lt;</span> l)   <span class="kw">return</span> INF;     <span class="cm">// 不相交</span>
+    <span class="kw">if</span> (l <span class="op">&lt;=</span> L <span class="op">&amp;&amp;</span> R <span class="op">&lt;=</span> r) <span class="kw">return</span> seg[id]; <span class="cm">// 完全包含</span>
+    <span class="ty">int</span> M <span class="op">=</span> L <span class="op">+</span> (R <span class="op">-</span> L) <span class="op">/</span> <span class="nu">2</span>;
+    <span class="kw">return</span> <span class="fn">min</span>(<span class="fn">query</span>(l, r, L, M, lc),
+               <span class="fn">query</span>(l, r, M <span class="op">+</span> <span class="nu">1</span>, R, rc));
+}</code></pre>
+
+    <div class="rule"><b>主呼叫：</b> <code>build(1, n, 1)</code> · <code>update(p, v, 1, n, 1)</code> · <code>query(l, r, 1, n, 1)</code></div>
+    <div class="rule ok"><span class="tag t-time">Time</span> <code>O(N + Q log N)</code> &nbsp;&nbsp; <span class="tag t-space">Space</span> <code>O(4N)</code></div>
+  </div>
+</template>
+
+<template id="pane-t2">
+  <div class="banner b2">🧩 TYPE 2 — 複雜狀態合併（Max Subarray Sum）</div>
+  <div class="section">
+    <p>查詢結果<b>無法靠單一值</b>表達時，每個節點存<b>一組狀態</b>，並用 <code>merge()</code> 合併兩子節點。</p>
+
+    <h3>節點 4 個狀態</h3>
+    <p>
+      <span class="tag t-sum">sum</span> 區段總和 &nbsp;
+      <span class="tag t-pre">pre</span> 從左端開始的最大連續和 &nbsp;
+      <span class="tag t-suf">suf</span> 到右端結束的最大連續和 &nbsp;
+      <span class="tag t-best">best</span> 區段內任意位置的最大連續子陣列和
+    </p>
+
+    <div style="text-align:center; margin:14px 0;">
+      <svg width="600" height="180" viewBox="0 0 600 180" style="max-width:100%;">
+        <!-- 區段條 -->
+        <rect x="50" y="60" width="500" height="40" fill="#161825" stroke="#3a4258"/>
+        <line x1="300" y1="60" x2="300" y2="100" stroke="#e06c75" stroke-width="2" stroke-dasharray="4,3"/>
+        <text x="300" y="118" text-anchor="middle" fill="#e06c75" font-size="11" font-family="ui-monospace,monospace">邊界</text>
+
+        <!-- pre：從左端 -->
+        <rect x="50"  y="62" width="100" height="36" fill="#58b3e060" stroke="#58b3e0" stroke-width="1.5"/>
+        <text x="100" y="50" text-anchor="middle" fill="#58b3e0" font-size="12" font-weight="700" font-family="ui-monospace,monospace">pre →</text>
+
+        <!-- suf：到右端 -->
+        <rect x="450" y="62" width="100" height="36" fill="#b07cd960" stroke="#b07cd9" stroke-width="1.5"/>
+        <text x="500" y="50" text-anchor="middle" fill="#b07cd9" font-size="12" font-weight="700" font-family="ui-monospace,monospace">← suf</text>
+
+        <!-- L 和 R 標記 -->
+        <text x="50"  y="138" text-anchor="middle" fill="#6a7385" font-size="11" font-family="ui-monospace,monospace">L</text>
+        <text x="550" y="138" text-anchor="middle" fill="#6a7385" font-size="11" font-family="ui-monospace,monospace">R</text>
+
+        <!-- L.suf + R.pre 跨邊界 -->
+        <rect x="220" y="148" width="160" height="16" fill="#4ec9a880" stroke="#4ec9a8" stroke-width="1.5"/>
+        <text x="300" y="178" text-anchor="middle" fill="#4ec9a8" font-size="11" font-weight="700" font-family="ui-monospace,monospace">L.suf + R.pre  (best 的第三候選)</text>
+
+        <!-- 標題 -->
+        <text x="300" y="20" text-anchor="middle" fill="#d8dee9" font-size="13" font-weight="700">合併兩子節點時的 4 個欄位來源</text>
+      </svg>
+    </div>
+
+    <h3>合併公式（核心）</h3>
+<pre><code><span class="nm">parent.sum</span>  <span class="op">=</span> L.sum <span class="op">+</span> R.sum
+<span class="nm">parent.pre</span>  <span class="op">=</span> max(L.pre, L.sum <span class="op">+</span> R.pre)
+<span class="nm">parent.suf</span>  <span class="op">=</span> max(R.suf, R.sum <span class="op">+</span> L.suf)
+<span class="nm">parent.best</span> <span class="op">=</span> max({L.best, R.best, <span class="cm">L.suf + R.pre</span>})  <span class="cm">// ← 跨邊界！</span></code></pre>
+
+    <h3>程式碼</h3>
+<pre><code><span class="kw">struct</span> <span class="ty">Node</span> { <span class="ty">ll</span> sum, pre, suf, best; };
+<span class="ty">ll</span> a[MAXN];
+<span class="ty">Node</span> seg[<span class="nu">4</span> <span class="op">*</span> MAXN];
+
+<span class="kw">#define</span> lc (id <span class="op">*</span> <span class="nu">2</span>)
+<span class="kw">#define</span> rc (id <span class="op">*</span> <span class="nu">2</span> <span class="op">+</span> <span class="nu">1</span>)
+
+<span class="ty">Node</span> <span class="fn">merge</span>(<span class="kw">const</span> <span class="ty">Node</span><span class="op">&amp;</span> L, <span class="kw">const</span> <span class="ty">Node</span><span class="op">&amp;</span> R) {
+    <span class="kw">return</span> {
+        L.sum <span class="op">+</span> R.sum,
+        <span class="fn">max</span>(L.pre, L.sum <span class="op">+</span> R.pre),
+        <span class="fn">max</span>(R.suf, R.sum <span class="op">+</span> L.suf),
+        <span class="fn">max</span>({L.best, R.best, L.suf <span class="op">+</span> R.pre})
+    };
+}
+
+<span class="kw">void</span> <span class="fn">pull</span>(<span class="ty">int</span> id) { seg[id] <span class="op">=</span> <span class="fn">merge</span>(seg[lc], seg[rc]); }
+
+<span class="kw">void</span> <span class="fn">build</span>(<span class="ty">int</span> L, <span class="ty">int</span> R, <span class="ty">int</span> id) {
+    <span class="kw">if</span> (L <span class="op">==</span> R) { seg[id] <span class="op">=</span> {a[L], a[L], a[L], a[L]}; <span class="kw">return</span>; }
+    <span class="ty">int</span> M <span class="op">=</span> L <span class="op">+</span> (R <span class="op">-</span> L) <span class="op">/</span> <span class="nu">2</span>;
+    <span class="fn">build</span>(L, M, lc);
+    <span class="fn">build</span>(M <span class="op">+</span> <span class="nu">1</span>, R, rc);
+    <span class="fn">pull</span>(id);
+}
+
+<span class="ty">Node</span> <span class="fn">query</span>(<span class="ty">int</span> l, <span class="ty">int</span> r, <span class="ty">int</span> L, <span class="ty">int</span> R, <span class="ty">int</span> id) {
+    <span class="kw">if</span> (l <span class="op">&lt;=</span> L <span class="op">&amp;&amp;</span> R <span class="op">&lt;=</span> r) <span class="kw">return</span> seg[id];
+    <span class="ty">int</span> M <span class="op">=</span> L <span class="op">+</span> (R <span class="op">-</span> L) <span class="op">/</span> <span class="nu">2</span>;
+    <span class="kw">if</span> (r <span class="op">&lt;=</span> M)     <span class="kw">return</span> <span class="fn">query</span>(l, r, L, M, lc);
+    <span class="kw">if</span> (l <span class="op">&gt;</span>  M)     <span class="kw">return</span> <span class="fn">query</span>(l, r, M <span class="op">+</span> <span class="nu">1</span>, R, rc);
+    <span class="kw">return</span> <span class="fn">merge</span>(<span class="fn">query</span>(l, r, L, M, lc),
+                 <span class="fn">query</span>(l, r, M <span class="op">+</span> <span class="nu">1</span>, R, rc));
+}</code></pre>
+
+    <div class="rule warn"><span class="tag t-warn">Warn</span> <b>Query 必須回傳整個 Node</b>，不能只回傳值，否則跨邊界資訊會丟失。</div>
+  </div>
+</template>
+
+<template id="pane-t3">
+  <div class="banner b3">🔢 TYPE 3 — 位置維度計數（低地距離 f315）</div>
+  <div class="section">
+    <p>樹建在「<b>位置 1~2N</b>」上（不是值上）。<b>離線</b>按值由小到大掃，已處理的值代表「已在樹中」。</p>
+
+    <h3>轉換思路</h3>
+    <ul>
+      <li>① 取值 <code>v</code> 的兩次出現位置 <code>(l, r)</code></li>
+      <li>② 查詢 <code>[l+1, r-1]</code> 上的 1 的數量 = 比 v 小的數字個數</li>
+      <li>③ <code>update(l, 1)</code>、<code>update(r, 1)</code> 把這兩位置加 1</li>
+    </ul>
+
+    <h3>程式碼</h3>
+<pre><code><span class="ty">int</span> n, seg[<span class="nu">4</span> <span class="op">*</span> MAXN];
+
+<span class="kw">#define</span> lc (id <span class="op">*</span> <span class="nu">2</span>)
+<span class="kw">#define</span> rc (id <span class="op">*</span> <span class="nu">2</span> <span class="op">+</span> <span class="nu">1</span>)
+
+<span class="kw">void</span> <span class="fn">pull</span>(<span class="ty">int</span> id) { seg[id] <span class="op">=</span> seg[lc] <span class="op">+</span> seg[rc]; }
+
+<span class="kw">void</span> <span class="fn">update</span>(<span class="ty">int</span> p, <span class="ty">int</span> v, <span class="ty">int</span> L, <span class="ty">int</span> R, <span class="ty">int</span> id) {
+    <span class="kw">if</span> (L <span class="op">==</span> R) { seg[id] <span class="op">+=</span> v; <span class="kw">return</span>; }
+    <span class="ty">int</span> M <span class="op">=</span> L <span class="op">+</span> (R <span class="op">-</span> L) <span class="op">/</span> <span class="nu">2</span>;
+    <span class="kw">if</span> (p <span class="op">&lt;=</span> M) <span class="fn">update</span>(p, v, L, M, lc);
+    <span class="kw">else</span>        <span class="fn">update</span>(p, v, M <span class="op">+</span> <span class="nu">1</span>, R, rc);
+    <span class="fn">pull</span>(id);
+}
+
+<span class="ty">int</span> <span class="fn">query</span>(<span class="ty">int</span> l, <span class="ty">int</span> r, <span class="ty">int</span> L, <span class="ty">int</span> R, <span class="ty">int</span> id) {
+    <span class="kw">if</span> (r <span class="op">&lt;</span> L <span class="op">||</span> R <span class="op">&lt;</span> l)   <span class="kw">return</span> <span class="nu">0</span>;
+    <span class="kw">if</span> (l <span class="op">&lt;=</span> L <span class="op">&amp;&amp;</span> R <span class="op">&lt;=</span> r) <span class="kw">return</span> seg[id];
+    <span class="ty">int</span> M <span class="op">=</span> L <span class="op">+</span> (R <span class="op">-</span> L) <span class="op">/</span> <span class="nu">2</span>;
+    <span class="kw">return</span> <span class="fn">query</span>(l, r, L, M, lc) <span class="op">+</span> <span class="fn">query</span>(l, r, M <span class="op">+</span> <span class="nu">1</span>, R, rc);
+}
+
+<span class="cm">// 主流程：按值由小到大處理 (seg[] 初始全 0，不需要 build)</span>
+<span class="ty">long long</span> ans <span class="op">=</span> <span class="nu">0</span>;
+<span class="kw">for</span> (<span class="ty">int</span> v <span class="op">=</span> <span class="nu">1</span>; v <span class="op">&lt;=</span> n; v<span class="op">++</span>) {
+    <span class="kw">auto</span> [l, r] <span class="op">=</span> pos[v];
+    <span class="kw">if</span> (l <span class="op">+</span> <span class="nu">1</span> <span class="op">&lt;=</span> r <span class="op">-</span> <span class="nu">1</span>)
+        ans <span class="op">+=</span> <span class="fn">query</span>(l <span class="op">+</span> <span class="nu">1</span>, r <span class="op">-</span> <span class="nu">1</span>, <span class="nu">1</span>, <span class="nu">2</span> <span class="op">*</span> n, <span class="nu">1</span>);
+    <span class="fn">update</span>(l, <span class="nu">1</span>, <span class="nu">1</span>, <span class="nu">2</span> <span class="op">*</span> n, <span class="nu">1</span>);
+    <span class="fn">update</span>(r, <span class="nu">1</span>, <span class="nu">1</span>, <span class="nu">2</span> <span class="op">*</span> n, <span class="nu">1</span>);
+}</code></pre>
+
+    <div class="rule"><b>易錯：</b> 答案要 <code>long long</code>；查 <code>(l+1, r-1)</code> 不含自己；樹大小開 <code>4 * (2N)</code>。</div>
+  </div>
+</template>
+
+<template id="pane-t4">
+  <div class="banner b4">🎯 TYPE 4 — 第 K 個查詢（樹上二分搜）</div>
+  <div class="section">
+    <p>每個葉初始 <code>1</code>（存在），刪除後設 <code>0</code>。靠「左子樹剩餘數量」決定走向。</p>
+
+    <h3>Query 核心邏輯</h3>
+    <table>
+      <tr><th>條件</th><th>動作</th><th>原因</th></tr>
+      <tr><td><code>seg[lc] &gt;= k</code></td><td>往左，k 不變</td><td>答案在左子樹</td></tr>
+      <tr><td><code>seg[lc] &lt; k</code></td><td>往右，<code>k -= seg[lc]</code></td><td>跳過整個左子樹</td></tr>
+    </table>
+
+    <div style="text-align:center; margin:14px 0;">
+      <svg width="560" height="240" viewBox="0 0 560 240" style="max-width:100%;">
+        <!-- 標題 -->
+        <text x="280" y="18" text-anchor="middle" fill="#d8dee9" font-size="13" font-weight="700">範例：找第 k=3 個剩餘元素（n=5, 已刪除 a[2]）</text>
+
+        <!-- root [1-5]: count = 4 -->
+        <rect x="230" y="35" width="100" height="44" rx="6" fill="#1a2a3a" stroke="#4ec9a8" stroke-width="2"/>
+        <text x="280" y="53" text-anchor="middle" fill="#4ec9a8" font-size="12" font-weight="700" font-family="ui-monospace,monospace">[1,5]: 4</text>
+        <text x="280" y="70" text-anchor="middle" fill="#d8dee9" font-size="10" font-family="ui-monospace,monospace">k=3</text>
+
+        <!-- Edges -->
+        <line x1="280" y1="79" x2="160" y2="120" stroke="#4ec9a8" stroke-width="2"/>
+        <line x1="280" y1="79" x2="400" y2="120" stroke="#3a4258" stroke-width="1"/>
+
+        <!-- Left [1-3]: count = 2 (a[2] deleted) -->
+        <rect x="110" y="120" width="100" height="44" rx="6" fill="#1a2a3a" stroke="#d99a3e" stroke-width="2"/>
+        <text x="160" y="138" text-anchor="middle" fill="#d99a3e" font-size="12" font-weight="700" font-family="ui-monospace,monospace">[1,3]: 2</text>
+        <text x="160" y="155" text-anchor="middle" fill="#d8dee9" font-size="10" font-family="ui-monospace,monospace">2 &lt; 3, 往右</text>
+
+        <!-- Right [4-5]: count = 2 -->
+        <rect x="350" y="120" width="100" height="44" rx="6" fill="#0f1320" stroke="#3a4258" stroke-width="1"/>
+        <text x="400" y="138" text-anchor="middle" fill="#6a7385" font-size="12" font-family="ui-monospace,monospace">[4,5]: 2</text>
+
+        <!-- Left's edges -->
+        <line x1="160" y1="164" x2="80"  y2="200" stroke="#3a4258" stroke-width="1"/>
+        <line x1="160" y1="164" x2="240" y2="200" stroke="#d99a3e" stroke-width="2"/>
+
+        <!-- a[1]: count=1, a[3]: count=1 -->
+        <rect x="40"  y="200" width="80" height="34" rx="6" fill="#0f1320" stroke="#3a4258" stroke-width="1"/>
+        <text x="80"  y="222" text-anchor="middle" fill="#6a7385" font-size="11" font-family="ui-monospace,monospace">[1,2]: 1</text>
+
+        <rect x="200" y="200" width="80" height="34" rx="6" fill="#1a2a3a" stroke="#e06c75" stroke-width="2"/>
+        <text x="240" y="222" text-anchor="middle" fill="#e06c75" font-size="11" font-weight="700" font-family="ui-monospace,monospace">[3,3] ✓</text>
+
+        <!-- Annotations -->
+        <text x="500" y="60"  fill="#4ec9a8" font-size="10" font-family="ui-monospace,monospace">root: k=3</text>
+        <text x="500" y="138" fill="#d99a3e" font-size="10" font-family="ui-monospace,monospace">左有2&lt;3</text>
+        <text x="500" y="152" fill="#d99a3e" font-size="10" font-family="ui-monospace,monospace">k=3-2=1</text>
+        <text x="500" y="222" fill="#e06c75" font-size="10" font-family="ui-monospace,monospace">找到 a[3]</text>
+      </svg>
+    </div>
+    <div class="rule"><b>關鍵：</b>每次比 <code>k</code> 與「左子的剩餘量 <code>seg[lc]</code>」，往右走時 <code>k</code> 要扣掉跳過的數量。</div>
+
+    <h3>程式碼</h3>
+<pre><code><span class="ty">int</span> n, seg[<span class="nu">4</span> <span class="op">*</span> MAXN];
+
+<span class="kw">#define</span> lc (id <span class="op">*</span> <span class="nu">2</span>)
+<span class="kw">#define</span> rc (id <span class="op">*</span> <span class="nu">2</span> <span class="op">+</span> <span class="nu">1</span>)
+
+<span class="kw">void</span> <span class="fn">pull</span>(<span class="ty">int</span> id) { seg[id] <span class="op">=</span> seg[lc] <span class="op">+</span> seg[rc]; }
+
+<span class="kw">void</span> <span class="fn">build</span>(<span class="ty">int</span> L, <span class="ty">int</span> R, <span class="ty">int</span> id) {
+    <span class="kw">if</span> (L <span class="op">==</span> R) { seg[id] <span class="op">=</span> <span class="nu">1</span>; <span class="kw">return</span>; }
+    <span class="ty">int</span> M <span class="op">=</span> L <span class="op">+</span> (R <span class="op">-</span> L) <span class="op">/</span> <span class="nu">2</span>;
+    <span class="fn">build</span>(L, M, lc);
+    <span class="fn">build</span>(M <span class="op">+</span> <span class="nu">1</span>, R, rc);
+    <span class="fn">pull</span>(id);
+}
+
+<span class="kw">void</span> <span class="fn">update</span>(<span class="ty">int</span> p, <span class="ty">int</span> v, <span class="ty">int</span> L, <span class="ty">int</span> R, <span class="ty">int</span> id) {
+    <span class="kw">if</span> (L <span class="op">==</span> R) { seg[id] <span class="op">=</span> v; <span class="kw">return</span>; }
+    <span class="ty">int</span> M <span class="op">=</span> L <span class="op">+</span> (R <span class="op">-</span> L) <span class="op">/</span> <span class="nu">2</span>;
+    <span class="kw">if</span> (p <span class="op">&lt;=</span> M) <span class="fn">update</span>(p, v, L, M, lc);
+    <span class="kw">else</span>        <span class="fn">update</span>(p, v, M <span class="op">+</span> <span class="nu">1</span>, R, rc);
+    <span class="fn">pull</span>(id);
+}
+
+<span class="cm">// 找第 k 個剩餘元素的原始位置</span>
+<span class="ty">int</span> <span class="fn">kth</span>(<span class="ty">int</span> k, <span class="ty">int</span> L, <span class="ty">int</span> R, <span class="ty">int</span> id) {
+    <span class="kw">if</span> (L <span class="op">==</span> R) <span class="kw">return</span> L;
+    <span class="ty">int</span> M <span class="op">=</span> L <span class="op">+</span> (R <span class="op">-</span> L) <span class="op">/</span> <span class="nu">2</span>;
+    <span class="kw">if</span> (seg[lc] <span class="op">&gt;=</span> k) <span class="kw">return</span> <span class="fn">kth</span>(k,           L,     M, lc);
+    <span class="kw">else</span>              <span class="kw">return</span> <span class="fn">kth</span>(k <span class="op">-</span> seg[lc], M <span class="op">+</span> <span class="nu">1</span>, R, rc);
+}
+
+<span class="cm">// 主流程：查 + 刪 (刪除 = 設為 0)</span>
+<span class="ty">int</span> p <span class="op">=</span> <span class="fn">kth</span>(k, <span class="nu">1</span>, n, <span class="nu">1</span>);
+cout <span class="op">&lt;&lt;</span> a[p];
+<span class="fn">update</span>(p, <span class="nu">0</span>, <span class="nu">1</span>, n, <span class="nu">1</span>);</code></pre>
+
+    <div class="rule warn"><b>必須 1-based。</b> 根節點 = 1，否則 <code>2 * 0 = 0</code> 死循環。</div>
+  </div>
+</template>
+
+<template id="pane-t5">
+  <div class="banner b5">🚀 TYPE 5 — 區間更新 (Lazy Propagation) — CSES 1735</div>
+  <div class="section">
+    <h3>題目（雙 Lazy）</h3>
+    <p><b>Op 1：</b>區間加 +x &nbsp;&nbsp; <b>Op 2：</b>區間賦值 = x &nbsp;&nbsp; <b>Op 3：</b>區間求和</p>
+
+    <h3>節點 3 個欄位</h3>
+    <p>
+      <span class="tag t-sum">sum</span> 區段總和（已反映 lazy） &nbsp;
+      <span class="tag t-set">setTag</span> 待下推的 SET（<code>-1</code> = 無） &nbsp;
+      <span class="tag t-add">addTag</span> 待下推的 ADD（累加）
+    </p>
+  </div>
+
+  <div class="banner b-merge">⚖️ 語意順序：「先 SET，再 ADD」</div>
+  <div class="section">
+    <table>
+      <tr><th style="width:170px">事件</th><th>處理</th></tr>
+      <tr><td>來新 SET</td><td>覆蓋 <code>setTag</code>，<b>清空 <code>addTag = 0</code></b></td></tr>
+      <tr><td>來新 ADD</td><td><code>addTag += val</code></td></tr>
+      <tr><td>Push 給子節點</td><td><b>先 push setTag，再 push addTag</b>，最後清空</td></tr>
+    </table>
+
+    <div style="text-align:center; margin:14px 0;">
+      <svg width="600" height="240" viewBox="0 0 600 240" style="max-width:100%;">
+        <text x="300" y="18" text-anchor="middle" fill="#d8dee9" font-size="13" font-weight="700">Push 流程：父節點 → 左右子</text>
+
+        <!-- 父節點 -->
+        <rect x="220" y="35" width="160" height="56" rx="6" fill="#1a2a3a" stroke="#d9c044" stroke-width="2"/>
+        <text x="300" y="52" text-anchor="middle" fill="#d9c044" font-size="12" font-weight="700" font-family="ui-monospace,monospace">node id (父)</text>
+        <text x="300" y="70" text-anchor="middle" fill="#d99a3e" font-size="11" font-family="ui-monospace,monospace">setTag = 5</text>
+        <text x="300" y="86" text-anchor="middle" fill="#4ec9a8" font-size="11" font-family="ui-monospace,monospace">addTag = +2</text>
+
+        <!-- 兩條箭頭 -->
+        <line x1="280" y1="91" x2="160" y2="160" stroke="#d99a3e" stroke-width="2" marker-end="url(#arr1)"/>
+        <line x1="320" y1="91" x2="440" y2="160" stroke="#d99a3e" stroke-width="2" marker-end="url(#arr1)"/>
+
+        <defs>
+          <marker id="arr1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L10,5 L0,10 Z" fill="#d99a3e"/>
+          </marker>
+        </defs>
+
+        <!-- 左子 -->
+        <rect x="60" y="160" width="180" height="60" rx="6" fill="#0f1320" stroke="#4ec9a8" stroke-width="1.5"/>
+        <text x="150" y="178" text-anchor="middle" fill="#4ec9a8" font-size="11" font-weight="700" font-family="ui-monospace,monospace">lc (左子)</text>
+        <text x="150" y="195" text-anchor="middle" fill="#d8dee9" font-size="10" font-family="ui-monospace,monospace">① applySet(5)→ sum, setTag</text>
+        <text x="150" y="212" text-anchor="middle" fill="#d8dee9" font-size="10" font-family="ui-monospace,monospace">② applyAdd(2)→ sum, addTag</text>
+
+        <!-- 右子 -->
+        <rect x="360" y="160" width="180" height="60" rx="6" fill="#0f1320" stroke="#4ec9a8" stroke-width="1.5"/>
+        <text x="450" y="178" text-anchor="middle" fill="#4ec9a8" font-size="11" font-weight="700" font-family="ui-monospace,monospace">rc (右子)</text>
+        <text x="450" y="195" text-anchor="middle" fill="#d8dee9" font-size="10" font-family="ui-monospace,monospace">① applySet(5)→ sum, setTag</text>
+        <text x="450" y="212" text-anchor="middle" fill="#d8dee9" font-size="10" font-family="ui-monospace,monospace">② applyAdd(2)→ sum, addTag</text>
+
+        <!-- 中間說明 -->
+        <text x="300" y="120" text-anchor="middle" fill="#e06c75" font-size="11" font-weight="700" font-family="ui-monospace,monospace">先 SET 再 ADD（順序不可顛倒！）</text>
+        <text x="300" y="138" text-anchor="middle" fill="#6a7385" font-size="10" font-family="ui-monospace,monospace">推完後：父的 setTag=NONE, addTag=0</text>
+      </svg>
+    </div>
+
+    <div class="rule warn"><b>為何 SET 要清掉 ADD？</b> 因為「全部設為 x」會讓任何之前的「+k」變得無意義。</div>
+    <div class="rule warn"><b>為何順序不能顛倒？</b> 若先推 ADD（子 +2），緊接著推 SET（子 = 5）會直接覆蓋掉剛加的 2 → <b>+2 永遠遺失</b>。</div>
+  </div>
+
+  <div class="banner b-info">💻 完整程式碼</div>
+  <div class="section">
+<pre><code><span class="kw">using</span> ll <span class="op">=</span> <span class="ty">long long</span>;
+<span class="kw">const</span> <span class="ty">ll</span> NONE <span class="op">=</span> <span class="op">-</span><span class="nu">1</span>;   <span class="cm">// 哨兵：無 set tag</span>
+
+<span class="kw">struct</span> <span class="ty">Node</span> { <span class="ty">ll</span> sum, setTag, addTag; } seg[<span class="nu">4</span> <span class="op">*</span> MAXN];
+<span class="ty">int</span> n; <span class="ty">ll</span> a[MAXN];
+
+<span class="kw">#define</span> lc (id <span class="op">*</span> <span class="nu">2</span>)
+<span class="kw">#define</span> rc (id <span class="op">*</span> <span class="nu">2</span> <span class="op">+</span> <span class="nu">1</span>)
+
+<span class="kw">void</span> <span class="fn">pull</span>(<span class="ty">int</span> id) { seg[id].sum <span class="op">=</span> seg[lc].sum <span class="op">+</span> seg[rc].sum; }
+
+<span class="kw">void</span> <span class="fn">applySet</span>(<span class="ty">int</span> id, <span class="ty">int</span> len, <span class="ty">ll</span> v) {
+    seg[id].sum    <span class="op">=</span> v <span class="op">*</span> len;
+    seg[id].setTag <span class="op">=</span> v;
+    seg[id].addTag <span class="op">=</span> <span class="nu">0</span>;        <span class="cm">// SET 清掉 ADD</span>
+}
+
+<span class="kw">void</span> <span class="fn">applyAdd</span>(<span class="ty">int</span> id, <span class="ty">int</span> len, <span class="ty">ll</span> v) {
+    seg[id].sum    <span class="op">+=</span> v <span class="op">*</span> len;
+    seg[id].addTag <span class="op">+=</span> v;
+}
+
+<span class="kw">void</span> <span class="fn">push</span>(<span class="ty">int</span> id, <span class="ty">int</span> L, <span class="ty">int</span> R) {
+    <span class="ty">int</span> M <span class="op">=</span> L <span class="op">+</span> (R <span class="op">-</span> L) <span class="op">/</span> <span class="nu">2</span>;
+    <span class="kw">if</span> (seg[id].setTag <span class="op">!=</span> NONE) {
+        <span class="fn">applySet</span>(lc, M <span class="op">-</span> L <span class="op">+</span> <span class="nu">1</span>, seg[id].setTag);
+        <span class="fn">applySet</span>(rc, R <span class="op">-</span> M,     seg[id].setTag);
+        seg[id].setTag <span class="op">=</span> NONE;
+    }
+    <span class="kw">if</span> (seg[id].addTag) {
+        <span class="fn">applyAdd</span>(lc, M <span class="op">-</span> L <span class="op">+</span> <span class="nu">1</span>, seg[id].addTag);
+        <span class="fn">applyAdd</span>(rc, R <span class="op">-</span> M,     seg[id].addTag);
+        seg[id].addTag <span class="op">=</span> <span class="nu">0</span>;
+    }
+}
+
+<span class="kw">void</span> <span class="fn">build</span>(<span class="ty">int</span> L, <span class="ty">int</span> R, <span class="ty">int</span> id) {
+    seg[id] <span class="op">=</span> {<span class="nu">0</span>, NONE, <span class="nu">0</span>};
+    <span class="kw">if</span> (L <span class="op">==</span> R) { seg[id].sum <span class="op">=</span> a[L]; <span class="kw">return</span>; }
+    <span class="ty">int</span> M <span class="op">=</span> L <span class="op">+</span> (R <span class="op">-</span> L) <span class="op">/</span> <span class="nu">2</span>;
+    <span class="fn">build</span>(L, M, lc);
+    <span class="fn">build</span>(M <span class="op">+</span> <span class="nu">1</span>, R, rc);
+    <span class="fn">pull</span>(id);
+}
+
+<span class="kw">void</span> <span class="fn">updateAdd</span>(<span class="ty">int</span> l, <span class="ty">int</span> r, <span class="ty">ll</span> v, <span class="ty">int</span> L, <span class="ty">int</span> R, <span class="ty">int</span> id) {
+    <span class="kw">if</span> (l <span class="op">&lt;=</span> L <span class="op">&amp;&amp;</span> R <span class="op">&lt;=</span> r) { <span class="fn">applyAdd</span>(id, R <span class="op">-</span> L <span class="op">+</span> <span class="nu">1</span>, v); <span class="kw">return</span>; }
+    <span class="fn">push</span>(id, L, R);
+    <span class="ty">int</span> M <span class="op">=</span> L <span class="op">+</span> (R <span class="op">-</span> L) <span class="op">/</span> <span class="nu">2</span>;
+    <span class="kw">if</span> (l <span class="op">&lt;=</span> M) <span class="fn">updateAdd</span>(l, r, v, L, M, lc);
+    <span class="kw">if</span> (r <span class="op">&gt;</span>  M) <span class="fn">updateAdd</span>(l, r, v, M <span class="op">+</span> <span class="nu">1</span>, R, rc);
+    <span class="fn">pull</span>(id);
+}
+
+<span class="kw">void</span> <span class="fn">updateSet</span>(<span class="ty">int</span> l, <span class="ty">int</span> r, <span class="ty">ll</span> v, <span class="ty">int</span> L, <span class="ty">int</span> R, <span class="ty">int</span> id) {
+    <span class="kw">if</span> (l <span class="op">&lt;=</span> L <span class="op">&amp;&amp;</span> R <span class="op">&lt;=</span> r) { <span class="fn">applySet</span>(id, R <span class="op">-</span> L <span class="op">+</span> <span class="nu">1</span>, v); <span class="kw">return</span>; }
+    <span class="fn">push</span>(id, L, R);
+    <span class="ty">int</span> M <span class="op">=</span> L <span class="op">+</span> (R <span class="op">-</span> L) <span class="op">/</span> <span class="nu">2</span>;
+    <span class="kw">if</span> (l <span class="op">&lt;=</span> M) <span class="fn">updateSet</span>(l, r, v, L, M, lc);
+    <span class="kw">if</span> (r <span class="op">&gt;</span>  M) <span class="fn">updateSet</span>(l, r, v, M <span class="op">+</span> <span class="nu">1</span>, R, rc);
+    <span class="fn">pull</span>(id);
+}
+
+<span class="ty">ll</span> <span class="fn">query</span>(<span class="ty">int</span> l, <span class="ty">int</span> r, <span class="ty">int</span> L, <span class="ty">int</span> R, <span class="ty">int</span> id) {
+    <span class="kw">if</span> (l <span class="op">&lt;=</span> L <span class="op">&amp;&amp;</span> R <span class="op">&lt;=</span> r) <span class="kw">return</span> seg[id].sum;
+    <span class="fn">push</span>(id, L, R);
+    <span class="ty">int</span> M <span class="op">=</span> L <span class="op">+</span> (R <span class="op">-</span> L) <span class="op">/</span> <span class="nu">2</span>;
+    <span class="ty">ll</span> res <span class="op">=</span> <span class="nu">0</span>;
+    <span class="kw">if</span> (l <span class="op">&lt;=</span> M) res <span class="op">+=</span> <span class="fn">query</span>(l, r, L, M, lc);
+    <span class="kw">if</span> (r <span class="op">&gt;</span>  M) res <span class="op">+=</span> <span class="fn">query</span>(l, r, M <span class="op">+</span> <span class="nu">1</span>, R, rc);
+    <span class="kw">return</span> res;
+}</code></pre>
+  </div>
+</template>
+
+<template id="pane-anim-basic">
+  <div class="banner b1">🌱 基礎動畫 — Build / Update / Query</div>
+  <div class="section" style="padding:0; background:transparent; border:none;">
+    <div id="basic-root"></div>
+  </div>
+</template>
+
+<template id="pane-anim">
+  <div class="banner b5">🎬 Lazy Propagation — 互動式動畫</div>
+  <div class="section" style="padding:0; background:transparent; border:none;">
+    <div id="lazy-root"></div>
+  </div>
+</template>
+
+
+<!-- =========================================================== -->
+<!-- Tab logic + Lazy animation script                            -->
+<!-- =========================================================== -->
+<script>
+const TABS = [
+  { id: "overview",   label: "📑 總覽" },
+  { id: "anim-basic", label: "🌱 基礎動畫" },
+  { id: "t1",         label: "Type 1 · RMQ" },
+  { id: "t2",         label: "Type 2 · 狀態合併" },
+  { id: "t3",         label: "Type 3 · 位置計數" },
+  { id: "t4",         label: "Type 4 · Kth" },
+  { id: "t5",         label: "Type 5 · Lazy" },
+  { id: "anim",       label: "🎬 Lazy 動畫" },
+];
+
+const tabsEl = document.getElementById("tabs");
+const panesEl = document.getElementById("panes");
+
+let curTab = "overview";
+function render() {
+  tabsEl.innerHTML = "";
+  for (const t of TABS) {
+    const b = document.createElement("button");
+    b.className = "tab" + (t.id === curTab ? " active" : "");
+    b.textContent = t.label;
+    b.onclick = () => { curTab = t.id; render(); window.scrollTo({ top: 0, behavior: "smooth" }); };
+    tabsEl.appendChild(b);
+  }
+  const tpl = document.getElementById("pane-" + curTab);
+  panesEl.innerHTML = "";
+  panesEl.appendChild(tpl.content.cloneNode(true));
+  if (curTab === "anim") mountLazyAnim();
+  if (curTab === "anim-basic") mountBasicAnim();
+}
+render();
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
 <script type="text/babel">
-const { useState, useEffect, useCallback, useRef } = React;
+const { useState, useEffect, useRef } = React;
 
 const INIT = [3, 1, 4, 1, 5, 9, 2, 6];
 const N = INIT.length;
@@ -38,151 +859,83 @@ function createTree(arr) {
   build(1, n, 1);
   return nodes;
 }
-
-function cloneTree(nodes) {
-  const c = {};
-  for (const k in nodes) c[k] = { ...nodes[k] };
-  return c;
-}
+function cloneTree(nodes) { const c = {}; for (const k in nodes) c[k] = { ...nodes[k] }; return c; }
 
 const SCENARIOS = [
-  {
-    title: "範例一：區間加值 [2,5] +3",
-    desc: "對 a[2]~a[5] 每個元素加 3，觀察懶標記如何「暫存」而不往下傳",
-    ops: [{ type: "add", l: 2, r: 5, val: 3 }],
-  },
-  {
-    title: "範例二：加值後查詢 [3,4]",
-    desc: "先加值 [2,5]+3，再查詢 [3,4]。查詢時必須 push 下推標記，才能拿到正確答案",
-    ops: [{ type: "add", l: 2, r: 5, val: 3 }, { type: "query", l: 3, r: 4 }],
-  },
-  {
-    title: "範例三：加值 → 賦值 → 查詢",
-    desc: "先 [2,5]+3，再 set [3,6]=10，最後查詢 [1,8]。觀察 set 如何覆蓋舊的 add",
-    ops: [
-      { type: "add", l: 2, r: 5, val: 3 },
-      { type: "set", l: 3, r: 6, val: 10 },
-      { type: "query", l: 1, r: 8 },
-    ],
-  },
+  { title: "範例一：[2,5] +3", desc: "對 a[2]~a[5] 每個元素加 3，觀察懶標記如何「暫存」而不往下傳",
+    ops: [{ type: "add", l: 2, r: 5, val: 3 }] },
+  { title: "範例二：加值後查詢 [3,4]", desc: "先加值 [2,5]+3，再查詢 [3,4]。查詢時必須 push 下推標記，才能拿到正確答案",
+    ops: [{ type: "add", l: 2, r: 5, val: 3 }, { type: "query", l: 3, r: 4 }] },
+  { title: "範例三：add → set → query", desc: "[2,5]+3，set [3,6]=10，查詢 [1,8]。觀察 set 如何覆蓋舊的 add",
+    ops: [{ type: "add", l: 2, r: 5, val: 3 }, { type: "set", l: 3, r: 6, val: 10 }, { type: "query", l: 1, r: 8 }] },
 ];
 
 function simulate(scenario) {
   let tree = createTree(INIT);
   const allSteps = [];
-
   for (const op of scenario.ops) {
-    const opLabel = op.type === "add" ? `區間加值 [${op.l},${op.r}] +${op.val}` :
-                    op.type === "set" ? `區間賦值 [${op.l},${op.r}] = ${op.val}` :
-                    `查詢區間和 [${op.l},${op.r}]`;
+    const opLabel = op.type === "add" ? `區間加值 [${op.l},${op.r}] +${op.val}`
+                  : op.type === "set" ? `區間賦值 [${op.l},${op.r}] = ${op.val}`
+                  : `查詢區間和 [${op.l},${op.r}]`;
     allSteps.push({ tree: cloneTree(tree), highlight: null, action: "op_start", desc: `開始操作：${opLabel}`, activeNodes: new Set() });
-
     const steps = [];
-
-    function applySet(id, len, val, t) {
-      t[id].sum = val * len;
-      t[id].set = val;
-      t[id].add = 0;
-    }
-    function applyAdd(id, len, val, t) {
-      t[id].sum += val * len;
-      t[id].add += val;
-    }
+    const applySet = (id, len, val, t) => { t[id].sum = val * len; t[id].set = val; t[id].add = 0; };
+    const applyAdd = (id, len, val, t) => { t[id].sum += val * len; t[id].add += val; };
     function push(id, t) {
       const L = t[id].L, R = t[id].R, M = (L + R) >> 1;
       const lc = 2 * id, rc = 2 * id + 1;
-      if (t[id].set !== -1) {
-        applySet(lc, M - L + 1, t[id].set, t);
-        applySet(rc, R - M, t[id].set, t);
-        t[id].set = -1;
-      }
-      if (t[id].add !== 0) {
-        applyAdd(lc, M - L + 1, t[id].add, t);
-        applyAdd(rc, R - M, t[id].add, t);
-        t[id].add = 0;
-      }
+      if (t[id].set !== -1) { applySet(lc, M - L + 1, t[id].set, t); applySet(rc, R - M, t[id].set, t); t[id].set = -1; }
+      if (t[id].add !== 0)  { applyAdd(lc, M - L + 1, t[id].add, t); applyAdd(rc, R - M, t[id].add, t); t[id].add = 0; }
     }
-
-    function modifyAdd(l, r, v, id, visited) {
-      const nd = tree[id];
-      visited.add(id);
+    function modify(kind, l, r, v, id, visited) {
+      const nd = tree[id]; visited.add(id);
       if (l <= nd.L && nd.R <= r) {
-        steps.push({ tree: cloneTree(tree), highlight: id, action: "tag_add",
-          desc: `節點 [${nd.L},${nd.R}]：完全包含在 [${l},${r}]，打 add 標記 +${v}（sum: ${nd.sum} → ${nd.sum + v * (nd.R - nd.L + 1)}）`,
+        steps.push({ tree: cloneTree(tree), highlight: id, action: kind === "add" ? "tag_add" : "tag_set",
+          desc: kind === "add"
+            ? `節點 [${nd.L},${nd.R}]：完全包含，打 add 標記 +${v}（sum: ${nd.sum} → ${nd.sum + v * (nd.R - nd.L + 1)}）`
+            : `節點 [${nd.L},${nd.R}]：完全包含，打 set 標記 =${v}（清掉舊 add，sum → ${v * (nd.R - nd.L + 1)}）`,
           activeNodes: new Set(visited) });
-        applyAdd(id, nd.R - nd.L + 1, v, tree);
-        steps.push({ tree: cloneTree(tree), highlight: id, action: "tag_done", desc: `節點 [${nd.L},${nd.R}]：標記完成 ✓ add=${tree[id].add}, sum=${tree[id].sum}`, activeNodes: new Set(visited) });
+        if (kind === "add") applyAdd(id, nd.R - nd.L + 1, v, tree);
+        else applySet(id, nd.R - nd.L + 1, v, tree);
+        steps.push({ tree: cloneTree(tree), highlight: id, action: "tag_done", desc: `節點 [${nd.L},${nd.R}]：標記完成 ✓`, activeNodes: new Set(visited) });
         return;
       }
       steps.push({ tree: cloneTree(tree), highlight: id, action: "push",
-        desc: `節點 [${nd.L},${nd.R}]：部分重疊，需要先 push 下推標記再遞迴${(nd.set !== -1 || nd.add !== 0) ? `（有標記：${nd.set !== -1 ? 'set=' + nd.set + ' ' : ''}${nd.add !== 0 ? 'add=' + nd.add : ''}）` : '（無標記，跳過 push）'}`,
-        activeNodes: new Set(visited) });
-      if (nd.set !== -1 || nd.add !== 0) {
-        push(id, tree);
-        steps.push({ tree: cloneTree(tree), highlight: id, action: "push_done", desc: `節點 [${nd.L},${nd.R}]：push 完成，標記已傳給子節點`, activeNodes: new Set(visited) });
-      }
-      const M = (nd.L + nd.R) >> 1;
-      if (l <= M) modifyAdd(l, r, v, 2 * id, visited);
-      if (r > M) modifyAdd(l, r, v, 2 * id + 1, visited);
-      tree[id].sum = tree[2 * id].sum + tree[2 * id + 1].sum;
-      steps.push({ tree: cloneTree(tree), highlight: id, action: "pull", desc: `節點 [${nd.L},${nd.R}]：pull 更新 sum = ${tree[2 * id].sum} + ${tree[2 * id + 1].sum} = ${tree[id].sum}`, activeNodes: new Set(visited) });
-    }
-
-    function modifySet(l, r, v, id, visited) {
-      const nd = tree[id];
-      visited.add(id);
-      if (l <= nd.L && nd.R <= r) {
-        steps.push({ tree: cloneTree(tree), highlight: id, action: "tag_set",
-          desc: `節點 [${nd.L},${nd.R}]：完全包含，打 set 標記 =${v}（清掉舊 add，sum → ${v * (nd.R - nd.L + 1)}）`,
-          activeNodes: new Set(visited) });
-        applySet(id, nd.R - nd.L + 1, v, tree);
-        steps.push({ tree: cloneTree(tree), highlight: id, action: "tag_done", desc: `節點 [${nd.L},${nd.R}]：標記完成 ✓ set=${tree[id].set}, add=0, sum=${tree[id].sum}`, activeNodes: new Set(visited) });
-        return;
-      }
-      steps.push({ tree: cloneTree(tree), highlight: id, action: "push",
-        desc: `節點 [${nd.L},${nd.R}]：部分重疊，需先 push${(nd.set !== -1 || nd.add !== 0) ? `（下推 ${nd.set !== -1 ? 'set=' + nd.set + ' ' : ''}${nd.add !== 0 ? 'add=' + nd.add : ''}）` : '（無標記）'}`,
+        desc: `節點 [${nd.L},${nd.R}]：部分重疊，先 push 下推${(nd.set !== -1 || nd.add !== 0) ? `（${nd.set !== -1 ? 'set='+nd.set+' ' : ''}${nd.add !== 0 ? 'add='+nd.add : ''}）` : '（無標記）'}`,
         activeNodes: new Set(visited) });
       if (nd.set !== -1 || nd.add !== 0) {
         push(id, tree);
         steps.push({ tree: cloneTree(tree), highlight: id, action: "push_done", desc: `節點 [${nd.L},${nd.R}]：push 完成`, activeNodes: new Set(visited) });
       }
       const M = (nd.L + nd.R) >> 1;
-      if (l <= M) modifySet(l, r, v, 2 * id, visited);
-      if (r > M) modifySet(l, r, v, 2 * id + 1, visited);
+      if (l <= M) modify(kind, l, r, v, 2 * id, visited);
+      if (r > M)  modify(kind, l, r, v, 2 * id + 1, visited);
       tree[id].sum = tree[2 * id].sum + tree[2 * id + 1].sum;
       steps.push({ tree: cloneTree(tree), highlight: id, action: "pull", desc: `節點 [${nd.L},${nd.R}]：pull 更新 sum = ${tree[id].sum}`, activeNodes: new Set(visited) });
     }
-
     function querySum(l, r, id, visited) {
-      const nd = tree[id];
-      visited.add(id);
+      const nd = tree[id]; visited.add(id);
       if (l <= nd.L && nd.R <= r) {
-        steps.push({ tree: cloneTree(tree), highlight: id, action: "query_hit",
-          desc: `節點 [${nd.L},${nd.R}]：完全包含，回傳 sum = ${nd.sum}`,
-          activeNodes: new Set(visited) });
+        steps.push({ tree: cloneTree(tree), highlight: id, action: "query_hit", desc: `節點 [${nd.L},${nd.R}]：完全包含，回傳 sum = ${nd.sum}`, activeNodes: new Set(visited) });
         return nd.sum;
       }
       steps.push({ tree: cloneTree(tree), highlight: id, action: "push",
-        desc: `節點 [${nd.L},${nd.R}]：查詢需進入子樹，先 push${(nd.set !== -1 || nd.add !== 0) ? `（下推 ${nd.set !== -1 ? 'set=' + nd.set + ' ' : ''}${nd.add !== 0 ? 'add=' + nd.add : ''}）` : '（無標記）'}`,
+        desc: `節點 [${nd.L},${nd.R}]：查詢需進入子樹，先 push${(nd.set !== -1 || nd.add !== 0) ? `（下推 ${nd.set !== -1 ? 'set='+nd.set+' ' : ''}${nd.add !== 0 ? 'add='+nd.add : ''}）` : '（無標記）'}`,
         activeNodes: new Set(visited) });
       if (nd.set !== -1 || nd.add !== 0) {
         push(id, tree);
-        steps.push({ tree: cloneTree(tree), highlight: id, action: "push_done", desc: `節點 [${nd.L},${nd.R}]：push 完成，標記已傳給子節點`, activeNodes: new Set(visited) });
+        steps.push({ tree: cloneTree(tree), highlight: id, action: "push_done", desc: `節點 [${nd.L},${nd.R}]：push 完成`, activeNodes: new Set(visited) });
       }
       const M = (nd.L + nd.R) >> 1;
       let res = 0;
       if (l <= M) res += querySum(l, r, 2 * id, visited);
-      if (r > M) res += querySum(l, r, 2 * id + 1, visited);
-      steps.push({ tree: cloneTree(tree), highlight: id, action: "query_merge",
-        desc: `節點 [${nd.L},${nd.R}]：子樹結果合併，區間和 = ${res}`,
-        activeNodes: new Set(visited) });
+      if (r > M)  res += querySum(l, r, 2 * id + 1, visited);
+      steps.push({ tree: cloneTree(tree), highlight: id, action: "query_merge", desc: `節點 [${nd.L},${nd.R}]：子樹結果合併，區間和 = ${res}`, activeNodes: new Set(visited) });
       return res;
     }
-
-    if (op.type === "add") modifyAdd(op.l, op.r, op.val, 1, new Set());
-    else if (op.type === "set") modifySet(op.l, op.r, op.val, 1, new Set());
-    else querySum(op.l, op.r, 1, new Set());
-
+    if (op.type === "add")      modify("add", op.l, op.r, op.val, 1, new Set());
+    else if (op.type === "set") modify("set", op.l, op.r, op.val, 1, new Set());
+    else                        querySum(op.l, op.r, 1, new Set());
     allSteps.push(...steps);
     allSteps.push({ tree: cloneTree(tree), highlight: null, action: "op_end", desc: `操作完成：${opLabel}`, activeNodes: new Set() });
   }
@@ -202,7 +955,6 @@ function getPositions() {
   return pos;
 }
 const POS = getPositions();
-
 function getEdges() {
   const edges = [];
   function addE(L, R, id) {
@@ -210,8 +962,7 @@ function getEdges() {
     const M = (L + R) >> 1;
     edges.push({ from: id, to: 2 * id });
     edges.push({ from: id, to: 2 * id + 1 });
-    addE(L, M, 2 * id);
-    addE(M + 1, R, 2 * id + 1);
+    addE(L, M, 2 * id); addE(M + 1, R, 2 * id + 1);
   }
   addE(1, N, 1);
   return edges;
@@ -221,25 +972,22 @@ const EDGES = getEdges();
 const COLORS = {
   bg: "#0c0e14", card: "#161825", border: "#2a2d40", text: "#d4d8e8", dim: "#5a5f7a",
   green: "#22c55e", yellow: "#eab308", purple: "#a855f7", blue: "#3b82f6",
-  red: "#ef4444", orange: "#f97316", cyan: "#06b6d4", pink: "#ec4899",
+  red: "#ef4444", orange: "#f97316", cyan: "#06b6d4",
 };
-
 const ACTION_COLORS = {
   tag_add: COLORS.green, tag_set: COLORS.orange, tag_done: COLORS.green,
   push: COLORS.yellow, push_done: COLORS.yellow,
   pull: COLORS.blue, query_hit: COLORS.cyan, query_merge: COLORS.blue,
   op_start: COLORS.purple, op_end: COLORS.purple,
 };
-
 const ACTION_LABELS = {
   tag_add: "打 ADD 標記", tag_set: "打 SET 標記", tag_done: "標記完成 ✓",
   push: "PUSH 下推", push_done: "下推完成 ✓",
   pull: "PULL 上拉", query_hit: "查詢命中", query_merge: "查詢合併",
   op_start: "操作開始", op_end: "操作完成",
 };
-
-const selS = { marginLeft: 4, padding: "3px 6px", borderRadius: 5, border: "1px solid #2a2d40", background: "#0c0e14", color: "#d4d8e8", fontSize: 11, fontFamily: "inherit" };
 const btnS = (c) => ({ padding: "5px 12px", borderRadius: 7, border: "none", background: c, color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" });
+const selS = { marginLeft: 4, padding: "3px 6px", borderRadius: 5, border: "1px solid #2a2d40", background: "#0c0e14", color: "#d4d8e8", fontSize: 11, fontFamily: "inherit" };
 
 function LazyPropViz() {
   const [scenIdx, setScenIdx] = useState(0);
@@ -249,182 +997,425 @@ function LazyPropViz() {
   const [speed, setSpeed] = useState(1200);
   const listRef = useRef(null);
 
+  useEffect(() => { setSteps(simulate(SCENARIOS[scenIdx])); setCur(-1); setPlaying(false); }, [scenIdx]);
   useEffect(() => {
-    const s = simulate(SCENARIOS[scenIdx]);
-    setSteps(s);
-    setCur(-1);
-    setPlaying(false);
-  }, [scenIdx]);
-
-  useEffect(() => {
-    if (!playing || cur >= steps.length - 1) {
-      if (cur >= steps.length - 1) setPlaying(false);
-      return;
-    }
+    if (!playing || cur >= steps.length - 1) { if (cur >= steps.length - 1) setPlaying(false); return; }
     const t = setTimeout(() => setCur(c => c + 1), speed);
     return () => clearTimeout(t);
   }, [playing, cur, steps.length, speed]);
-
   useEffect(() => {
-    if (listRef.current && cur >= 0) {
-      const el = listRef.current.children[cur + 1]; // +1 for the <p> header
-      if (el) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
-    }
+    if (!listRef.current || cur < 0) return;
+    const container = listRef.current;
+    const el = container.children[cur + 1];
+    if (!el) return;
+    const top = el.offsetTop - container.offsetTop;
+    const bottom = top + el.offsetHeight;
+    if (top < container.scrollTop) container.scrollTop = top;
+    else if (bottom > container.scrollTop + container.clientHeight) container.scrollTop = bottom - container.clientHeight;
   }, [cur]);
 
   const snap = cur >= 0 && cur < steps.length ? steps[cur] : null;
   const treeData = snap ? snap.tree : (steps.length > 0 ? steps[0].tree : createTree(INIT));
   const highlightId = snap ? snap.highlight : null;
   const activeNodes = snap ? snap.activeNodes : new Set();
-  const hasTag = (nd) => nd && (nd.set !== -1 || nd.add !== 0);
-  const getColor = (id) => {
-    const nodeStates = {};
-    for (let i = 0; i <= cur && i < steps.length; i++) nodeStates[steps[i].highlight] = steps[i].action;
-    return ACTION_COLORS[nodeStates[id]] || COLORS.dim;
-  };
 
-  return React.createElement("div", { style: { background: COLORS.bg, minHeight: "100vh", color: COLORS.text, fontFamily: "'JetBrains Mono','Fira Code','SF Mono',monospace", padding: 16, boxSizing: "border-box" } },
-    React.createElement("div", { style: { maxWidth: 860, margin: "0 auto" } },
+  return React.createElement("div", { style: { color: COLORS.text, fontFamily: "ui-monospace,'JetBrains Mono',monospace" } },
+    React.createElement("p", { style: { textAlign: "center", color: COLORS.dim, fontSize: 12, margin: "0 0 14px" } }, "a[1..8] = [", INIT.join(", "), "]"),
 
-      // Title
-      React.createElement("h1", { style: { fontSize: 20, fontWeight: 800, textAlign: "center", margin: "0 0 2px", color: COLORS.cyan, letterSpacing: 1 } }, "LAZY PROPAGATION 動畫教學"),
-      React.createElement("p", { style: { textAlign: "center", color: COLORS.dim, fontSize: 12, margin: "0 0 14px" } }, "a[1..8] = [", INIT.join(", "), "]，線段樹維護區間和，支援區間加值 / 賦值"),
+    React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap", justifyContent: "center" } },
+      SCENARIOS.map((s, i) =>
+        React.createElement("button", { key: i, onClick: () => setScenIdx(i),
+          style: { padding: "7px 14px", borderRadius: 8, border: `1.5px solid ${i === scenIdx ? COLORS.cyan : COLORS.border}`, background: i === scenIdx ? "rgba(6,182,212,0.15)" : COLORS.card, color: i === scenIdx ? COLORS.cyan : COLORS.dim, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }
+        }, s.title)
+      )
+    ),
+    React.createElement("p", { style: { textAlign: "center", color: COLORS.dim, fontSize: 12, margin: "0 0 14px", lineHeight: 1.5 } }, SCENARIOS[scenIdx].desc),
 
-      // Scenario picker
-      React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap", justifyContent: "center" } },
-        SCENARIOS.map((s, i) =>
-          React.createElement("button", {
-            key: i, onClick: () => setScenIdx(i),
-            style: { padding: "7px 14px", borderRadius: 8, border: `1.5px solid ${i === scenIdx ? COLORS.cyan : COLORS.border}`, background: i === scenIdx ? "rgba(6,182,212,0.15)" : COLORS.card, color: i === scenIdx ? COLORS.cyan : COLORS.dim, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }
-          }, s.title)
+    React.createElement("div", { style: { background: COLORS.card, borderRadius: 10, padding: "10px 16px", marginBottom: 12, display: "flex", gap: 10, alignItems: "center", justifyContent: "center", flexWrap: "wrap", border: `1px solid ${COLORS.border}` } },
+      React.createElement("button", { onClick: () => { setCur(-1); setPlaying(false); }, style: btnS(COLORS.dim) }, "重置"),
+      React.createElement("button", { onClick: () => { setCur(c => Math.max(-1, c - 1)); setPlaying(false); }, style: btnS(COLORS.purple), disabled: cur <= -1 }, "◀"),
+      React.createElement("button", { onClick: () => { if (cur >= steps.length - 1) { setCur(-1); setTimeout(() => setPlaying(true), 80); } else setPlaying(p => !p); }, style: btnS(COLORS.cyan) }, playing ? "⏸ 暫停" : "▶ 播放"),
+      React.createElement("button", { onClick: () => { setCur(c => Math.min(steps.length - 1, c + 1)); setPlaying(false); }, style: btnS(COLORS.blue), disabled: cur >= steps.length - 1 }, "▶"),
+      React.createElement("label", { style: { fontSize: 11, color: COLORS.dim } }, "速度",
+        React.createElement("select", { value: speed, onChange: e => setSpeed(+e.target.value), style: selS },
+          React.createElement("option", { value: 2000 }, "慢"),
+          React.createElement("option", { value: 1200 }, "中"),
+          React.createElement("option", { value: 600 }, "快"),
+          React.createElement("option", { value: 300 }, "極快"),
         )
       ),
-      React.createElement("p", { style: { textAlign: "center", color: COLORS.dim, fontSize: 12, margin: "0 0 14px", lineHeight: 1.5 } }, SCENARIOS[scenIdx].desc),
+      React.createElement("span", { style: { fontSize: 11, color: COLORS.dim } }, `步驟 ${cur + 1}/${steps.length}`)
+    ),
 
-      // Controls
-      React.createElement("div", { style: { background: COLORS.card, borderRadius: 10, padding: "10px 16px", marginBottom: 12, display: "flex", gap: 10, alignItems: "center", justifyContent: "center", flexWrap: "wrap", border: `1px solid ${COLORS.border}` } },
-        React.createElement("button", { onClick: () => { setCur(-1); setPlaying(false); }, style: btnS(COLORS.dim) }, "重置"),
-        React.createElement("button", { onClick: () => { setCur(c => Math.max(-1, c - 1)); setPlaying(false); }, style: btnS(COLORS.purple), disabled: cur <= -1 }, "◀"),
-        React.createElement("button", { onClick: () => { if (cur >= steps.length - 1) { setCur(-1); setTimeout(() => setPlaying(true), 80); } else setPlaying(p => !p); }, style: btnS(COLORS.cyan) }, playing ? "⏸ 暫停" : "▶ 播放"),
-        React.createElement("button", { onClick: () => { setCur(c => Math.min(steps.length - 1, c + 1)); setPlaying(false); }, style: btnS(COLORS.blue), disabled: cur >= steps.length - 1 }, "▶"),
-        React.createElement("label", { style: { fontSize: 11, color: COLORS.dim } }, "速度",
-          React.createElement("select", { value: speed, onChange: e => setSpeed(+e.target.value), style: selS },
-            React.createElement("option", { value: 2000 }, "慢"),
-            React.createElement("option", { value: 1200 }, "中"),
-            React.createElement("option", { value: 600 }, "快"),
-            React.createElement("option", { value: 300 }, "極快"),
-          )
-        ),
-        React.createElement("span", { style: { fontSize: 11, color: COLORS.dim } }, `步驟 ${cur + 1}/${steps.length}`)
-      ),
-
-      // Array
-      React.createElement("div", { style: { display: "flex", justifyContent: "center", gap: 3, marginBottom: 12 } },
-        INIT.map((v, i) =>
-          React.createElement("div", { key: i, style: { width: 46, height: 40, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", borderRadius: 6, background: COLORS.card, border: `1.5px solid ${COLORS.border}`, fontSize: 13, fontWeight: 700, color: COLORS.text } },
-            v,
-            React.createElement("span", { style: { fontSize: 9, color: COLORS.dim } }, `a[${i + 1}]`)
-          )
+    React.createElement("div", { style: { display: "flex", justifyContent: "center", gap: 3, marginBottom: 12 } },
+      INIT.map((v, i) =>
+        React.createElement("div", { key: i, style: { width: 46, height: 40, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", borderRadius: 6, background: COLORS.card, border: `1.5px solid ${COLORS.border}`, fontSize: 13, fontWeight: 700, color: COLORS.text } },
+          v, React.createElement("span", { style: { fontSize: 9, color: COLORS.dim } }, `a[${i + 1}]`)
         )
-      ),
+      )
+    ),
 
-      // Tree SVG
-      React.createElement("div", { style: { background: COLORS.card, borderRadius: 10, padding: "8px 0 4px", marginBottom: 12, border: `1px solid ${COLORS.border}`, overflowX: "auto" } },
-        React.createElement("svg", { width: 800, height: 410, viewBox: "0 0 800 410", style: { display: "block", margin: "0 auto" } },
-          // Edges
-          EDGES.map(e => {
-            const p1 = POS[e.from], p2 = POS[e.to];
-            const active = activeNodes.has(e.from) && activeNodes.has(e.to);
-            return React.createElement("line", { key: `${e.from}-${e.to}`, x1: p1.x, y1: p1.y + 20, x2: p2.x, y2: p2.y - 20, stroke: active ? "#ffffff55" : "#222438", strokeWidth: active ? 2 : 1.2, style: { transition: "all 0.35s" } });
-          }),
-          // Nodes
-          Object.entries(POS).map(([idStr, pos]) => {
-            const id = parseInt(idStr);
-            const nd = treeData[id];
-            if (!nd) return null;
-            const isHL = highlightId === id;
-            const isActive = activeNodes.has(id);
-            const ht = hasTag(nd);
-            const color = isHL ? (ACTION_COLORS[snap?.action] || COLORS.cyan) : (isActive ? "#445" : COLORS.bg);
-            const borderColor = isHL ? "#fff" : (ht ? COLORS.yellow : (isActive ? "#556" : "#2a2d40"));
+    React.createElement("div", { style: { background: COLORS.card, borderRadius: 10, padding: "8px 0 4px", marginBottom: 12, border: `1px solid ${COLORS.border}`, overflowX: "auto" } },
+      React.createElement("svg", { width: 800, height: 410, viewBox: "0 0 800 410", style: { display: "block", margin: "0 auto" } },
+        EDGES.map(e => {
+          const p1 = POS[e.from], p2 = POS[e.to];
+          const active = activeNodes.has(e.from) && activeNodes.has(e.to);
+          return React.createElement("line", { key: `${e.from}-${e.to}`, x1: p1.x, y1: p1.y + 20, x2: p2.x, y2: p2.y - 20, stroke: active ? "#ffffff55" : "#222438", strokeWidth: active ? 2 : 1.2, style: { transition: "all 0.35s" } });
+        }),
+        Object.entries(POS).map(([idStr, pos]) => {
+          const id = parseInt(idStr);
+          const nd = treeData[id]; if (!nd) return null;
+          const isHL = highlightId === id;
+          const isActive = activeNodes.has(id);
+          const ht = nd && (nd.set !== -1 || nd.add !== 0);
+          const color = isHL ? (ACTION_COLORS[snap?.action] || COLORS.cyan) : (isActive ? "#445" : COLORS.bg);
+          const borderColor = isHL ? "#fff" : (ht ? COLORS.yellow : (isActive ? "#556" : "#2a2d40"));
+          const children = [
+            React.createElement("rect", { key: "box", x: pos.x - 27, y: pos.y - 19, width: 54, height: 38, rx: 8, fill: color, stroke: borderColor, strokeWidth: isHL ? 2.5 : 1.5, opacity: isActive || isHL ? 1 : 0.35, style: { transition: "all 0.35s" } }),
+            React.createElement("text", { key: "sum", x: pos.x, y: pos.y - 4, textAnchor: "middle", fontSize: 12, fontWeight: 700, fill: isActive || isHL ? "#fff" : COLORS.dim }, nd.sum),
+            React.createElement("text", { key: "range", x: pos.x, y: pos.y + 10, textAnchor: "middle", fontSize: 8, fill: isActive || isHL ? "#ffffff88" : "#ffffff33" }, `[${nd.L},${nd.R}]`),
+          ];
+          if (nd.set !== -1) {
+            children.push(React.createElement("rect", { key: "stag-bg", x: pos.x + 18, y: pos.y - 28, width: 32, height: 14, rx: 4, fill: COLORS.orange, opacity: 0.9 }));
+            children.push(React.createElement("text", { key: "stag-txt", x: pos.x + 34, y: pos.y - 18, textAnchor: "middle", fontSize: 8, fontWeight: 700, fill: "#fff" }, `S=${nd.set}`));
+          }
+          if (nd.add !== 0) {
+            children.push(React.createElement("rect", { key: "atag-bg", x: pos.x - 50, y: pos.y - 28, width: 38, height: 14, rx: 4, fill: COLORS.green, opacity: 0.9 }));
+            children.push(React.createElement("text", { key: "atag-txt", x: pos.x - 31, y: pos.y - 18, textAnchor: "middle", fontSize: 8, fontWeight: 700, fill: "#fff" }, `A=+${nd.add}`));
+          }
+          return React.createElement("g", { key: id }, ...children);
+        })
+      )
+    ),
 
-            const children = [
-              isHL && React.createElement("rect", { key: "glow", x: pos.x - 30, y: pos.y - 22, width: 60, height: 44, rx: 10, fill: "none", stroke: ACTION_COLORS[snap?.action] || COLORS.cyan, strokeWidth: 2, opacity: 0.4,
-                children: React.createElement("animate", { attributeName: "opacity", values: "0.4;0.15;0.4", dur: "1s", repeatCount: "indefinite" }) }),
-              React.createElement("rect", { key: "box", x: pos.x - 27, y: pos.y - 19, width: 54, height: 38, rx: 8, fill: color, stroke: borderColor, strokeWidth: isHL ? 2.5 : 1.5, opacity: isActive || isHL ? 1 : 0.35, style: { transition: "all 0.35s" } }),
-              React.createElement("text", { key: "sum", x: pos.x, y: pos.y - 4, textAnchor: "middle", fontSize: 12, fontWeight: 700, fill: isActive || isHL ? "#fff" : COLORS.dim }, nd.sum),
-              React.createElement("text", { key: "range", x: pos.x, y: pos.y + 10, textAnchor: "middle", fontSize: 8, fill: isActive || isHL ? "#ffffff88" : "#ffffff33" }, `[${nd.L},${nd.R}]`),
-            ];
-            if (nd.set !== -1) {
-              children.push(React.createElement("rect", { key: "stag-bg", x: pos.x + 18, y: pos.y - 28, width: 32, height: 14, rx: 4, fill: COLORS.orange, opacity: 0.9 }));
-              children.push(React.createElement("text", { key: "stag-txt", x: pos.x + 34, y: pos.y - 18, textAnchor: "middle", fontSize: 8, fontWeight: 700, fill: "#fff" }, `S=${nd.set}`));
-            }
-            if (nd.add !== 0) {
-              children.push(React.createElement("rect", { key: "atag-bg", x: pos.x - 50, y: pos.y - 28, width: 38, height: 14, rx: 4, fill: COLORS.green, opacity: 0.9 }));
-              children.push(React.createElement("text", { key: "atag-txt", x: pos.x - 31, y: pos.y - 18, textAnchor: "middle", fontSize: 8, fontWeight: 700, fill: "#fff" }, `A=+${nd.add}`));
-            }
-            return React.createElement("g", { key: id }, ...children.filter(Boolean));
-          })
+    React.createElement("div", { style: { background: COLORS.card, borderRadius: 10, padding: "12px 16px", marginBottom: 12, border: `1px solid ${COLORS.border}`, height: 100, overflow: "hidden" } },
+      snap ? React.createElement("div", null,
+        React.createElement("span", { style: { display: "inline-block", padding: "2px 10px", borderRadius: 5, fontSize: 10, fontWeight: 700, background: ACTION_COLORS[snap.action] || COLORS.dim, color: "#fff", marginBottom: 6 } }, ACTION_LABELS[snap.action] || snap.action),
+        React.createElement("p", { style: { margin: "4px 0 0", fontSize: 13, lineHeight: 1.6 } }, snap.desc),
+      ) : React.createElement("p", { style: { margin: 0, fontSize: 13, color: COLORS.dim } }, "按 ▶ 開始播放，或用 ◀ ▶ 逐步觀察")
+    ),
+
+    React.createElement("div", { ref: listRef, style: { background: COLORS.card, borderRadius: 10, padding: "12px 14px", border: `1px solid ${COLORS.border}`, maxHeight: 220, overflowY: "auto" } },
+      React.createElement("p", { style: { fontSize: 11, color: COLORS.dim, margin: "0 0 6px" } }, "完整步驟（可點擊跳轉）："),
+      steps.map((s, i) =>
+        React.createElement("div", { key: i, onClick: () => { setCur(i); setPlaying(false); },
+          style: { padding: "4px 8px", marginBottom: 2, borderRadius: 5, fontSize: 11, cursor: "pointer", background: i === cur ? "rgba(255,255,255,0.07)" : "transparent", opacity: i <= cur ? 1 : 0.3, borderLeft: `3px solid ${i === cur ? (ACTION_COLORS[s.action] || COLORS.dim) : "transparent"}`, transition: "all 0.15s", lineHeight: 1.5, color: COLORS.text }
+        },
+          React.createElement("span", { style: { color: COLORS.dim, marginRight: 6 } }, `${i + 1}.`),
+          React.createElement("span", { style: { color: ACTION_COLORS[s.action] || COLORS.dim, fontWeight: 600, marginRight: 4, fontSize: 10 } }, `[${ACTION_LABELS[s.action]}]`),
+          s.desc
         )
-      ),
-
-      // Step explanation
-      React.createElement("div", { style: { background: COLORS.card, borderRadius: 10, padding: "12px 16px", marginBottom: 12, border: `1px solid ${COLORS.border}`, minHeight: 60 } },
-        snap ? React.createElement("div", null,
-          React.createElement("span", { style: { display: "inline-block", padding: "2px 10px", borderRadius: 5, fontSize: 10, fontWeight: 700, background: ACTION_COLORS[snap.action] || COLORS.dim, color: "#fff", marginBottom: 6 } }, ACTION_LABELS[snap.action] || snap.action),
-          React.createElement("p", { style: { margin: "4px 0 0", fontSize: 13, lineHeight: 1.6 } }, snap.desc),
-          snap.action === "push" && React.createElement("p", { style: { margin: "6px 0 0", fontSize: 12, color: COLORS.yellow, lineHeight: 1.5 }, dangerouslySetInnerHTML: { __html: "💡 <b>Push 下推</b>：要進入子節點前，必須把自己的懶標記傳下去。<br/>set 標記 → 子節點的 sum 被覆蓋，子節點舊的 add 被清掉<br/>add 標記 → 子節點的 sum 增加，子節點的 add 累加" } }),
-          snap.action === "tag_add" && React.createElement("p", { style: { margin: "6px 0 0", fontSize: 12, color: COLORS.green, lineHeight: 1.5 }, dangerouslySetInnerHTML: { __html: "💡 <b>打 add 標記</b>：這個區間完全在修改範圍內，直接更新 sum 並記下「子孫都要加值」，不再往下走！" } }),
-          snap.action === "tag_set" && React.createElement("p", { style: { margin: "6px 0 0", fontSize: 12, color: COLORS.orange, lineHeight: 1.5 }, dangerouslySetInnerHTML: { __html: "💡 <b>打 set 標記</b>：整個區間被賦值，sum 直接算出。舊的 add 清零（被 set 覆蓋了），記下「子孫都要改成這個值」。" } }),
-        ) : React.createElement("p", { style: { margin: 0, fontSize: 13, color: COLORS.dim } }, "按 ▶ 開始播放，或用 ◀ ▶ 逐步觀察")
-      ),
-
-      // Legend
-      React.createElement("div", { style: { display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", fontSize: 11, marginBottom: 12 } },
-        [
-          { bg: COLORS.green, label: "A=+n", text: "Add 標記" },
-          { bg: COLORS.orange, label: "S=n", text: "Set 標記" },
-          { bg: COLORS.yellow, label: "PUSH", text: "下推標記" },
-          { bg: COLORS.blue, label: "PULL", text: "上拉更新" },
-          { bg: COLORS.cyan, label: "HIT", text: "查詢命中" },
-        ].map(item =>
-          React.createElement("div", { key: item.text, style: { display: "flex", alignItems: "center", gap: 5 } },
-            React.createElement("span", { style: { display: "inline-block", padding: "1px 6px", borderRadius: 4, background: item.bg, color: "#fff", fontSize: 9, fontWeight: 700 } }, item.label),
-            React.createElement("span", { style: { color: COLORS.dim } }, item.text)
-          )
-        )
-      ),
-
-      // Step list
-      React.createElement("div", { ref: listRef, style: { background: COLORS.card, borderRadius: 10, padding: "12px 14px", border: `1px solid ${COLORS.border}`, maxHeight: 220, overflowY: "auto" } },
-        React.createElement("p", { style: { fontSize: 11, color: COLORS.dim, margin: "0 0 6px" } }, "完整步驟（可點擊跳轉）："),
-        steps.map((s, i) =>
-          React.createElement("div", {
-            key: i, onClick: () => { setCur(i); setPlaying(false); },
-            style: { padding: "4px 8px", marginBottom: 2, borderRadius: 5, fontSize: 11, cursor: "pointer", background: i === cur ? "rgba(255,255,255,0.07)" : "transparent", opacity: i <= cur ? 1 : 0.3, borderLeft: `3px solid ${i === cur ? (ACTION_COLORS[s.action] || COLORS.dim) : "transparent"}`, transition: "all 0.15s", lineHeight: 1.5, color: COLORS.text }
-          },
-            React.createElement("span", { style: { color: COLORS.dim, marginRight: 6 } }, `${i + 1}.`),
-            React.createElement("span", { style: { color: ACTION_COLORS[s.action] || COLORS.dim, fontWeight: 600, marginRight: 4, fontSize: 10 } }, `[${ACTION_LABELS[s.action]}]`),
-            s.desc
-          )
-        )
-      ),
-
-      // Concept summary
-      React.createElement("div", { style: { background: COLORS.card, borderRadius: 10, padding: "14px 16px", marginTop: 12, border: `1px solid ${COLORS.border}`, fontSize: 12, lineHeight: 1.8, color: COLORS.dim }, dangerouslySetInnerHTML: { __html: `
-        <p style="margin:0 0 6px;color:${COLORS.text};font-weight:700;font-size:14px">懶標記核心概念：</p>
-        <p style="margin:0">
-          <span style="color:${COLORS.green}">■</span> <b style="color:${COLORS.text}">為什麼要 Lazy？</b> 區間修改時，不需要一路改到葉節點。遇到完全包含的區間就「打標記停下來」，等到真正需要進入子樹時才 push 下推。<br/>
-          <span style="color:${COLORS.yellow}">■</span> <b style="color:${COLORS.text}">什麼時候 Push？</b> 每次要遞迴進入子節點之前（不論是修改還是查詢），都必須先把當前節點的標記下推給左右子節點。<br/>
-          <span style="color:${COLORS.orange}">■</span> <b style="color:${COLORS.text}">Set + Add 的順序？</b> 語意是「先 set 再 add」。新的 set 會清掉舊的 add（被覆蓋），新的 add 則是在現有基礎上累加。<br/>
-          <span style="color:${COLORS.blue}">■</span> <b style="color:${COLORS.text}">Pull 是什麼？</b> 遞迴回來後，用左右子節點的 sum 更新自己的 sum，確保祖先的資訊是正確的。
-        </p>
-      ` } })
+      )
     )
   );
 }
 
-ReactDOM.render(React.createElement(LazyPropViz), document.getElementById("root"));
+window.mountLazyAnim = function() {
+  const root = document.getElementById("lazy-root");
+  if (!root) return;
+  ReactDOM.render(React.createElement(LazyPropViz), root);
+};
+
+/* ===========================================================
+   🌱 基礎動畫 — Build / Update / Query
+   =========================================================== */
+const B_INIT = [3, 1, 4, 1, 5, 9, 2, 6];
+const B_N = B_INIT.length;
+
+function bMakeTree() {
+  const t = {};
+  function f(L, R, id) {
+    t[id] = { sum: 0, L, R };
+    if (L === R) return;
+    const M = L + ((R - L) >> 1);
+    f(L, M, 2 * id);
+    f(M + 1, R, 2 * id + 1);
+  }
+  f(1, B_N, 1);
+  return t;
+}
+function bClone(t) { const c = {}; for (const k in t) c[k] = { ...t[k] }; return c; }
+
+const B_POS = (() => {
+  const pos = {};
+  function f(L, R, id, x, y, sp) {
+    pos[id] = { x, y, L, R };
+    if (L === R) return;
+    const M = L + ((R - L) >> 1);
+    f(L, M, 2 * id, x - sp, y + 80, sp / 2);
+    f(M + 1, R, 2 * id + 1, x + sp, y + 80, sp / 2);
+  }
+  f(1, B_N, 1, 400, 40, 175);
+  return pos;
+})();
+const B_EDGES = (() => {
+  const e = [];
+  function f(L, R, id) {
+    if (L === R) return;
+    const M = L + ((R - L) >> 1);
+    e.push({ a: id, b: 2 * id });
+    e.push({ a: id, b: 2 * id + 1 });
+    f(L, M, 2 * id); f(M + 1, R, 2 * id + 1);
+  }
+  f(1, B_N, 1);
+  return e;
+})();
+
+/* ── 三個情境 ── */
+const B_SCENARIOS = [
+  {
+    title: "① Build — 由葉到根建樹",
+    desc: "從葉節點存原始值開始，往上每個父節點 = 左子 + 右子。後序遍歷 (post-order)。",
+    run: "build",
+  },
+  {
+    title: "② Point Update — 單點修改",
+    desc: "把 a[3] 改成 10。從根往下走到葉，回程時更新一條路徑（O(log N)）。",
+    run: "update", p: 3, v: 10,
+  },
+  {
+    title: "③ Range Query — 區間查詢",
+    desc: "查詢 sum([3, 6])。每個節點落入三種情況之一：不相交 / 完全包含 / 部分相交。",
+    run: "query", l: 3, r: 6,
+  },
+];
+
+function bSimulate(scen) {
+  const tree = bMakeTree();
+  // 先把葉節點填好初始值（給 update / query 使用，build 動畫會自己一步步重算）
+  function preBuild(L, R, id) {
+    if (L === R) { tree[id].sum = B_INIT[L - 1]; return; }
+    const M = L + ((R - L) >> 1);
+    preBuild(L, M, 2 * id);
+    preBuild(M + 1, R, 2 * id + 1);
+    tree[id].sum = tree[2 * id].sum + tree[2 * id + 1].sum;
+  }
+  const steps = [];
+
+  if (scen.run === "build") {
+    // 重置成 0
+    for (const k in tree) tree[k].sum = 0;
+    function build(L, R, id) {
+      steps.push({ tree: bClone(tree), hl: id, action: "enter",
+        desc: `進入節點 id=${id} [${L},${R}]，向下遞迴` });
+      if (L === R) {
+        tree[id].sum = B_INIT[L - 1];
+        steps.push({ tree: bClone(tree), hl: id, action: "leaf",
+          desc: `葉節點 [${L},${L}] = a[${L}] = ${B_INIT[L - 1]}` });
+        return;
+      }
+      const M = L + ((R - L) >> 1);
+      build(L, M, 2 * id);
+      build(M + 1, R, 2 * id + 1);
+      tree[id].sum = tree[2 * id].sum + tree[2 * id + 1].sum;
+      steps.push({ tree: bClone(tree), hl: id, action: "pull",
+        desc: `pull: id=${id} sum = ${tree[2 * id].sum} + ${tree[2 * id + 1].sum} = ${tree[id].sum}` });
+    }
+    build(1, B_N, 1);
+  }
+  else if (scen.run === "update") {
+    preBuild(1, B_N, 1);
+    steps.push({ tree: bClone(tree), hl: null, action: "start",
+      desc: `update(p=${scen.p}, v=${scen.v})：把 a[${scen.p}] 改成 ${scen.v}` });
+    function upd(p, v, L, R, id) {
+      steps.push({ tree: bClone(tree), hl: id, action: "enter",
+        desc: `進入 id=${id} [${L},${R}]：p=${p} 在區間內，繼續往下` });
+      if (L === R) {
+        const old = tree[id].sum;
+        tree[id].sum = v;
+        steps.push({ tree: bClone(tree), hl: id, action: "leaf",
+          desc: `葉節點 [${L},${L}]：${old} → ${v}` });
+        return;
+      }
+      const M = L + ((R - L) >> 1);
+      if (p <= M) upd(p, v, L, M, 2 * id);
+      else        upd(p, v, M + 1, R, 2 * id + 1);
+      tree[id].sum = tree[2 * id].sum + tree[2 * id + 1].sum;
+      steps.push({ tree: bClone(tree), hl: id, action: "pull",
+        desc: `pull: id=${id} sum = ${tree[2 * id].sum} + ${tree[2 * id + 1].sum} = ${tree[id].sum}` });
+    }
+    upd(scen.p, scen.v, 1, B_N, 1);
+  }
+  else if (scen.run === "query") {
+    preBuild(1, B_N, 1);
+    const l = scen.l, r = scen.r;
+    steps.push({ tree: bClone(tree), hl: null, action: "start",
+      desc: `query(l=${l}, r=${r})：求 a[${l}..${r}] 的總和` });
+    function q(L, R, id) {
+      // Case A: 不相交
+      if (R < l || L > r) {
+        steps.push({ tree: bClone(tree), hl: id, action: "skip",
+          desc: `id=${id} [${L},${R}]：與 [${l},${r}] 不相交 → 回傳 0` });
+        return 0;
+      }
+      // Case B: 完全包含
+      if (l <= L && R <= r) {
+        steps.push({ tree: bClone(tree), hl: id, action: "hit",
+          desc: `id=${id} [${L},${R}]：完全在 [${l},${r}] 內 → 直接回傳 sum=${tree[id].sum}` });
+        return tree[id].sum;
+      }
+      // Case C: 部分相交
+      steps.push({ tree: bClone(tree), hl: id, action: "split",
+        desc: `id=${id} [${L},${R}]：部分相交 → 切成左右子樹查詢` });
+      const M = L + ((R - L) >> 1);
+      const left = q(L, M, 2 * id);
+      const right = q(M + 1, R, 2 * id + 1);
+      const total = left + right;
+      steps.push({ tree: bClone(tree), hl: id, action: "merge",
+        desc: `id=${id} 合併：${left} + ${right} = ${total}` });
+      return total;
+    }
+    const ans = q(1, B_N, 1);
+    steps.push({ tree: bClone(tree), hl: null, action: "done",
+      desc: `✓ 答案：sum([${l},${r}]) = ${ans}` });
+  }
+  return steps;
+}
+
+const B_COLORS = {
+  bg: "#0c0e14", card: "#161825", border: "#2a2d40", text: "#d4d8e8", dim: "#5a5f7a",
+  enter:  "#58b3e0",  // 藍
+  leaf:   "#4ec9a8",  // 綠
+  pull:   "#d9c044",  // 黃
+  skip:   "#5a5f7a",  // 灰
+  hit:    "#4ec9a8",  // 綠
+  split:  "#d99a3e",  // 橘
+  merge:  "#d9c044",  // 黃
+  start:  "#b07cd9",  // 紫
+  done:   "#b07cd9",  // 紫
+};
+const B_LABELS = {
+  enter: "進入節點", leaf: "葉節點", pull: "PULL 上拉",
+  skip: "不相交", hit: "完全包含", split: "部分相交", merge: "合併",
+  start: "開始", done: "完成",
+};
+
+function BasicViz() {
+  const [scenIdx, setScenIdx] = useState(0);
+  const [steps, setSteps] = useState([]);
+  const [cur, setCur] = useState(-1);
+  const [playing, setPlaying] = useState(false);
+  const [speed, setSpeed] = useState(900);
+  const listRef = useRef(null);
+
+  useEffect(() => { setSteps(bSimulate(B_SCENARIOS[scenIdx])); setCur(-1); setPlaying(false); }, [scenIdx]);
+  useEffect(() => {
+    if (!playing || cur >= steps.length - 1) { if (cur >= steps.length - 1) setPlaying(false); return; }
+    const t = setTimeout(() => setCur(c => c + 1), speed);
+    return () => clearTimeout(t);
+  }, [playing, cur, steps.length, speed]);
+  useEffect(() => {
+    if (!listRef.current || cur < 0) return;
+    const container = listRef.current;
+    const el = container.children[cur + 1];
+    if (!el) return;
+    const top = el.offsetTop - container.offsetTop;
+    const bottom = top + el.offsetHeight;
+    if (top < container.scrollTop) container.scrollTop = top;
+    else if (bottom > container.scrollTop + container.clientHeight) container.scrollTop = bottom - container.clientHeight;
+  }, [cur]);
+
+  const snap = cur >= 0 && cur < steps.length ? steps[cur] : null;
+  const tree = snap ? snap.tree : (steps.length > 0 ? steps[0].tree : bMakeTree());
+  const hlId = snap ? snap.hl : null;
+  const action = snap ? snap.action : null;
+  const hlColor = action ? B_COLORS[action] : B_COLORS.enter;
+
+  const btnS = (c) => ({ padding: "5px 12px", borderRadius: 7, border: "none", background: c, color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" });
+  const selS = { marginLeft: 4, padding: "3px 6px", borderRadius: 5, border: "1px solid #2a2d40", background: "#0c0e14", color: "#d4d8e8", fontSize: 11, fontFamily: "inherit" };
+
+  return React.createElement("div", { style: { color: B_COLORS.text, fontFamily: "ui-monospace,'JetBrains Mono',monospace" } },
+
+    // 情境選擇
+    React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap", justifyContent: "center" } },
+      B_SCENARIOS.map((s, i) =>
+        React.createElement("button", { key: i, onClick: () => setScenIdx(i),
+          style: { padding: "8px 16px", borderRadius: 8, border: `1.5px solid ${i === scenIdx ? B_COLORS.enter : B_COLORS.border}`, background: i === scenIdx ? "rgba(88,179,224,0.15)" : B_COLORS.card, color: i === scenIdx ? B_COLORS.enter : B_COLORS.dim, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }
+        }, s.title)
+      )
+    ),
+    React.createElement("p", { style: { textAlign: "center", color: B_COLORS.dim, fontSize: 12, margin: "4px 0 14px", lineHeight: 1.6 } }, B_SCENARIOS[scenIdx].desc),
+
+    // 控制列
+    React.createElement("div", { style: { background: B_COLORS.card, borderRadius: 10, padding: "10px 16px", marginBottom: 12, display: "flex", gap: 10, alignItems: "center", justifyContent: "center", flexWrap: "wrap", border: `1px solid ${B_COLORS.border}` } },
+      React.createElement("button", { onClick: () => { setCur(-1); setPlaying(false); }, style: btnS(B_COLORS.dim) }, "重置"),
+      React.createElement("button", { onClick: () => { setCur(c => Math.max(-1, c - 1)); setPlaying(false); }, style: btnS("#a855f7"), disabled: cur <= -1 }, "◀"),
+      React.createElement("button", { onClick: () => { if (cur >= steps.length - 1) { setCur(-1); setTimeout(() => setPlaying(true), 80); } else setPlaying(p => !p); }, style: btnS(B_COLORS.enter) }, playing ? "⏸ 暫停" : "▶ 播放"),
+      React.createElement("button", { onClick: () => { setCur(c => Math.min(steps.length - 1, c + 1)); setPlaying(false); }, style: btnS("#3b82f6"), disabled: cur >= steps.length - 1 }, "▶"),
+      React.createElement("label", { style: { fontSize: 11, color: B_COLORS.dim } }, "速度",
+        React.createElement("select", { value: speed, onChange: e => setSpeed(+e.target.value), style: selS },
+          React.createElement("option", { value: 1500 }, "慢"),
+          React.createElement("option", { value: 900 }, "中"),
+          React.createElement("option", { value: 500 }, "快"),
+        )
+      ),
+      React.createElement("span", { style: { fontSize: 11, color: B_COLORS.dim } }, `${cur + 1} / ${steps.length}`)
+    ),
+
+    // 原陣列
+    React.createElement("div", { style: { display: "flex", justifyContent: "center", gap: 3, marginBottom: 12 } },
+      B_INIT.map((v, i) => {
+        const idx = i + 1;
+        const inQ = B_SCENARIOS[scenIdx].run === "query" && idx >= B_SCENARIOS[scenIdx].l && idx <= B_SCENARIOS[scenIdx].r;
+        const updP = B_SCENARIOS[scenIdx].run === "update" && idx === B_SCENARIOS[scenIdx].p;
+        return React.createElement("div", { key: i, style: { width: 46, height: 44, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", borderRadius: 6, background: B_COLORS.card, border: `1.5px solid ${updP ? B_COLORS.split : (inQ ? B_COLORS.hit : B_COLORS.border)}`, fontSize: 13, fontWeight: 700, color: B_COLORS.text } },
+          updP ? B_SCENARIOS[scenIdx].v : v,
+          React.createElement("span", { style: { fontSize: 9, color: B_COLORS.dim } }, `a[${idx}]`)
+        );
+      })
+    ),
+
+    // 樹圖
+    React.createElement("div", { style: { background: B_COLORS.card, borderRadius: 10, padding: "8px 0 4px", marginBottom: 12, border: `1px solid ${B_COLORS.border}`, overflowX: "auto" } },
+      React.createElement("svg", { width: 800, height: 380, viewBox: "0 0 800 380", style: { display: "block", margin: "0 auto" } },
+        B_EDGES.map(e => {
+          const p1 = B_POS[e.a], p2 = B_POS[e.b];
+          return React.createElement("line", { key: `${e.a}-${e.b}`, x1: p1.x, y1: p1.y + 18, x2: p2.x, y2: p2.y - 18, stroke: "#2a2d40", strokeWidth: 1, style: { transition: "all 0.3s" } });
+        }),
+        Object.entries(B_POS).map(([idStr, pos]) => {
+          const id = parseInt(idStr);
+          const nd = tree[id]; if (!nd) return null;
+          const isHL = hlId === id;
+          const fill = isHL ? hlColor : B_COLORS.bg;
+          const stroke = isHL ? "#fff" : "#2a2d40";
+          return React.createElement("g", { key: id },
+            React.createElement("rect", { x: pos.x - 26, y: pos.y - 18, width: 52, height: 36, rx: 6, fill: fill, stroke: stroke, strokeWidth: isHL ? 2.5 : 1, style: { transition: "all 0.3s" } }),
+            React.createElement("text", { x: pos.x, y: pos.y - 2, textAnchor: "middle", fontSize: 12, fontWeight: 700, fill: isHL ? "#fff" : B_COLORS.text }, nd.sum),
+            React.createElement("text", { x: pos.x, y: pos.y + 12, textAnchor: "middle", fontSize: 8, fill: isHL ? "#ffffffaa" : B_COLORS.dim }, `[${nd.L},${nd.R}]`)
+          );
+        })
+      )
+    ),
+
+    // 步驟說明
+    React.createElement("div", { style: { background: B_COLORS.card, borderRadius: 10, padding: "12px 16px", marginBottom: 12, border: `1px solid ${B_COLORS.border}`, height: 90, overflow: "hidden" } },
+      snap ? React.createElement("div", null,
+        React.createElement("span", { style: { display: "inline-block", padding: "2px 10px", borderRadius: 5, fontSize: 10, fontWeight: 700, background: hlColor, color: "#fff", marginBottom: 6 } }, B_LABELS[action] || action),
+        React.createElement("p", { style: { margin: "4px 0 0", fontSize: 13, lineHeight: 1.6 } }, snap.desc)
+      ) : React.createElement("p", { style: { margin: 0, fontSize: 13, color: B_COLORS.dim } }, "按 ▶ 開始播放")
+    ),
+
+    // 步驟清單
+    React.createElement("div", { ref: listRef, style: { background: B_COLORS.card, borderRadius: 10, padding: "12px 14px", border: `1px solid ${B_COLORS.border}`, maxHeight: 200, overflowY: "auto" } },
+      React.createElement("p", { style: { fontSize: 11, color: B_COLORS.dim, margin: "0 0 6px" } }, "完整步驟："),
+      steps.map((s, i) =>
+        React.createElement("div", { key: i, onClick: () => { setCur(i); setPlaying(false); },
+          style: { padding: "4px 8px", marginBottom: 2, borderRadius: 5, fontSize: 11, cursor: "pointer", background: i === cur ? "rgba(255,255,255,0.07)" : "transparent", opacity: i <= cur ? 1 : 0.35, borderLeft: `3px solid ${i === cur ? B_COLORS[s.action] : "transparent"}`, lineHeight: 1.5, color: B_COLORS.text }
+        },
+          React.createElement("span", { style: { color: B_COLORS.dim, marginRight: 6 } }, `${i + 1}.`),
+          React.createElement("span", { style: { color: B_COLORS[s.action], fontWeight: 600, marginRight: 4, fontSize: 10 } }, `[${B_LABELS[s.action]}]`),
+          s.desc
+        )
+      )
+    )
+  );
+}
+
+window.mountBasicAnim = function() {
+  const root = document.getElementById("basic-root");
+  if (!root) return;
+  ReactDOM.render(React.createElement(BasicViz), root);
+};
 </script>
 </body>
 </html>
