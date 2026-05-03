@@ -207,6 +207,16 @@
           <b>建樹：</b><code>build(L, R, id)</code><br>
           <span style="color:#6a7385; font-size:12px;">統一規則：「目標參數 (p / l,r / v) → 節點區間 (L,R) → 節點編號 (id)」</span>
         </td></tr>
+      <tr><td>Query 骨架</td>
+        <td>
+<pre style="margin:0; padding:10px 14px; background:#0a0c12;"><code><span style="color:#c586c0;">if</span> (l &lt;= L &amp;&amp; R &lt;= r) <span style="color:#c586c0;">return</span> seg[id];   <span style="color:#6a7385;">// 完全包含 → 直接回傳</span>
+<span style="color:#4ec9b0;">int</span> M = L + (R - L) / <span style="color:#b5cea8;">2</span>;
+<span style="color:#4ec9b0;">T</span> res = <span style="color:#9cdcfe;">NEUTRAL</span>;                       <span style="color:#6a7385;">// min→INF, sum→0, Node→{0,-∞,-∞,-∞}</span>
+<span style="color:#c586c0;">if</span> (l &lt;= M) res = <span style="color:#dcdcaa;">combine</span>(res, <span style="color:#dcdcaa;">query</span>(l, r, L,     M, lc));
+<span style="color:#c586c0;">if</span> (r &gt;  M) res = <span style="color:#dcdcaa;">combine</span>(res, <span style="color:#dcdcaa;">query</span>(l, r, M + <span style="color:#b5cea8;">1</span>, R, rc));
+<span style="color:#c586c0;">return</span> res;</code></pre>
+          <span style="color:#6a7385; font-size:12px;">所有 5 個 Type 都長這樣。pre-check 不進入不相交的子樹，避免浪費呼叫。</span>
+        </td></tr>
     </table>
   </div>
 
@@ -295,7 +305,7 @@
           <rect x="160" y="35" width="80" height="20" fill="#d99a3e40" stroke="#d99a3e"/>
           <text x="200" y="30" text-anchor="middle" fill="#d99a3e" font-size="11" font-family="ui-monospace,monospace">[l, r]</text>
         </svg>
-        <div style="font-size:12px; color:#b7bdc9; margin-top:6px;">回傳「<b>單位元</b>」(min→INF, sum→0)</div>
+        <div style="font-size:12px; color:#b7bdc9; margin-top:6px;">由 <code>if (l&lt;=M)</code> / <code>if (r&gt;M)</code> 預判，<b>根本不會進入</b></div>
       </div>
 
       <!-- Case B -->
@@ -325,7 +335,7 @@
       </div>
 
     </div>
-    <div class="rule"><b>記憶法：</b>看到節點時，先問「我跟查詢區間有沒有交集？」→ 沒有就回單位元、完全被包就回自己、否則切兩半繼續問。</div>
+    <div class="rule"><b>統一寫法：</b> code 只寫 case B（完全包含直接回傳）+ case C（pre-check 用 <code>if (l&lt;=M)</code> 和 <code>if (r&gt;M)</code> 決定要不要遞迴）。case A 不用寫，因為被 pre-check 攔下，<b>根本不會進入不相交的子樹</b>。</div>
   </div>
 
   <div class="banner b-info">📑 題型總覽</div>
@@ -400,11 +410,12 @@
 }
 
 <span class="ty">int</span> <span class="fn">query</span>(<span class="ty">int</span> l, <span class="ty">int</span> r, <span class="ty">int</span> L, <span class="ty">int</span> R, <span class="ty">int</span> id) {
-    <span class="kw">if</span> (r <span class="op">&lt;</span> L <span class="op">||</span> R <span class="op">&lt;</span> l)   <span class="kw">return</span> INF;     <span class="cm">// 不相交</span>
     <span class="kw">if</span> (l <span class="op">&lt;=</span> L <span class="op">&amp;&amp;</span> R <span class="op">&lt;=</span> r) <span class="kw">return</span> seg[id]; <span class="cm">// 完全包含</span>
     <span class="ty">int</span> M <span class="op">=</span> L <span class="op">+</span> (R <span class="op">-</span> L) <span class="op">/</span> <span class="nu">2</span>;
-    <span class="kw">return</span> <span class="fn">min</span>(<span class="fn">query</span>(l, r, L, M, lc),
-               <span class="fn">query</span>(l, r, M <span class="op">+</span> <span class="nu">1</span>, R, rc));
+    <span class="ty">int</span> res <span class="op">=</span> INF;
+    <span class="kw">if</span> (l <span class="op">&lt;=</span> M) res <span class="op">=</span> <span class="fn">min</span>(res, <span class="fn">query</span>(l, r, L, M, lc));
+    <span class="kw">if</span> (r <span class="op">&gt;</span>  M) res <span class="op">=</span> <span class="fn">min</span>(res, <span class="fn">query</span>(l, r, M <span class="op">+</span> <span class="nu">1</span>, R, rc));
+    <span class="kw">return</span> res;
 }</code></pre>
 
     <div class="rule"><b>主呼叫：</b> <code>build(1, n, 1)</code> · <code>update(p, v, 1, n, 1)</code> · <code>query(l, r, 1, n, 1)</code></div>
@@ -461,6 +472,9 @@
 
     <h3>程式碼</h3>
 <pre><code><span class="kw">struct</span> <span class="ty">Node</span> { <span class="ty">ll</span> sum, pre, suf, best; };
+<span class="kw">const</span> <span class="ty">ll</span> NEG <span class="op">=</span> LLONG_MIN <span class="op">/</span> <span class="nu">2</span>;
+<span class="kw">const</span> <span class="ty">Node</span> NEUTRAL <span class="op">=</span> {<span class="nu">0</span>, NEG, NEG, NEG};   <span class="cm">// merge 的單位元素</span>
+
 <span class="ty">ll</span> a[MAXN];
 <span class="ty">Node</span> seg[<span class="nu">4</span> <span class="op">*</span> MAXN];
 
@@ -487,12 +501,12 @@
 }
 
 <span class="ty">Node</span> <span class="fn">query</span>(<span class="ty">int</span> l, <span class="ty">int</span> r, <span class="ty">int</span> L, <span class="ty">int</span> R, <span class="ty">int</span> id) {
-    <span class="kw">if</span> (l <span class="op">&lt;=</span> L <span class="op">&amp;&amp;</span> R <span class="op">&lt;=</span> r) <span class="kw">return</span> seg[id];
+    <span class="kw">if</span> (l <span class="op">&lt;=</span> L <span class="op">&amp;&amp;</span> R <span class="op">&lt;=</span> r) <span class="kw">return</span> seg[id]; <span class="cm">// 完全包含</span>
     <span class="ty">int</span> M <span class="op">=</span> L <span class="op">+</span> (R <span class="op">-</span> L) <span class="op">/</span> <span class="nu">2</span>;
-    <span class="kw">if</span> (r <span class="op">&lt;=</span> M)     <span class="kw">return</span> <span class="fn">query</span>(l, r, L, M, lc);
-    <span class="kw">if</span> (l <span class="op">&gt;</span>  M)     <span class="kw">return</span> <span class="fn">query</span>(l, r, M <span class="op">+</span> <span class="nu">1</span>, R, rc);
-    <span class="kw">return</span> <span class="fn">merge</span>(<span class="fn">query</span>(l, r, L, M, lc),
-                 <span class="fn">query</span>(l, r, M <span class="op">+</span> <span class="nu">1</span>, R, rc));
+    <span class="ty">Node</span> res <span class="op">=</span> NEUTRAL;
+    <span class="kw">if</span> (l <span class="op">&lt;=</span> M) res <span class="op">=</span> <span class="fn">merge</span>(res, <span class="fn">query</span>(l, r, L, M, lc));
+    <span class="kw">if</span> (r <span class="op">&gt;</span>  M) res <span class="op">=</span> <span class="fn">merge</span>(res, <span class="fn">query</span>(l, r, M <span class="op">+</span> <span class="nu">1</span>, R, rc));
+    <span class="kw">return</span> res;
 }</code></pre>
 
     <div class="rule warn"><span class="tag t-warn">Warn</span> <b>Query 必須回傳整個 Node</b>，不能只回傳值，否則跨邊界資訊會丟失。</div>
@@ -528,10 +542,12 @@
 }
 
 <span class="ty">int</span> <span class="fn">query</span>(<span class="ty">int</span> l, <span class="ty">int</span> r, <span class="ty">int</span> L, <span class="ty">int</span> R, <span class="ty">int</span> id) {
-    <span class="kw">if</span> (r <span class="op">&lt;</span> L <span class="op">||</span> R <span class="op">&lt;</span> l)   <span class="kw">return</span> <span class="nu">0</span>;
-    <span class="kw">if</span> (l <span class="op">&lt;=</span> L <span class="op">&amp;&amp;</span> R <span class="op">&lt;=</span> r) <span class="kw">return</span> seg[id];
+    <span class="kw">if</span> (l <span class="op">&lt;=</span> L <span class="op">&amp;&amp;</span> R <span class="op">&lt;=</span> r) <span class="kw">return</span> seg[id]; <span class="cm">// 完全包含</span>
     <span class="ty">int</span> M <span class="op">=</span> L <span class="op">+</span> (R <span class="op">-</span> L) <span class="op">/</span> <span class="nu">2</span>;
-    <span class="kw">return</span> <span class="fn">query</span>(l, r, L, M, lc) <span class="op">+</span> <span class="fn">query</span>(l, r, M <span class="op">+</span> <span class="nu">1</span>, R, rc);
+    <span class="ty">int</span> res <span class="op">=</span> <span class="nu">0</span>;
+    <span class="kw">if</span> (l <span class="op">&lt;=</span> M) res <span class="op">+=</span> <span class="fn">query</span>(l, r, L, M, lc);
+    <span class="kw">if</span> (r <span class="op">&gt;</span>  M) res <span class="op">+=</span> <span class="fn">query</span>(l, r, M <span class="op">+</span> <span class="nu">1</span>, R, rc);
+    <span class="kw">return</span> res;
 }
 
 <span class="cm">// 主流程：按值由小到大處理 (seg[] 初始全 0，不需要 build)</span>

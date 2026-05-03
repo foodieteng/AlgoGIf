@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LC 2830 — Maximize Profit DP 動畫教學</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0e14;--bg2:#0f1319;--surface:#151a23;--surface2:#1a2030;
+    --border:#252d3a;--border-bright:#3a4560;
+    --text:#c8d0dc;--text-dim:#6b7a90;--text-bright:#e8edf5;
+    --accent:#59c2ff;--accent-dim:#1a3a55;
+    --green:#7fd962;--green-dim:#1a3520;
+    --orange:#ffb454;--orange-dim:#3a2a15;
+    --red:#ff6b6b;--red-dim:#3a1a1a;
+    --purple:#c792ea;--purple-dim:#2a1a3a;
+    --yellow:#ffd580;--cyan:#95e6cb;--pink:#f07178;
+    --radius:10px;--shadow:0 4px 24px rgba(0,0,0,.4);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'DM Sans','Noto Sans TC',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;min-height:100vh;overflow-x:hidden;}
+  body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;}
+  .app{max-width:1100px;margin:0 auto;padding:36px 22px 100px;}
+
+  header{text-align:center;margin-bottom:28px;}
+  header .eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--accent);margin-bottom:10px;}
+  header h1{font-family:'Instrument Serif',serif;font-size:clamp(28px,4.5vw,44px);font-weight:400;color:var(--text-bright);line-height:1.2;margin-bottom:10px;}
+  header h1 em{font-style:italic;color:var(--yellow);}
+  header .subtitle{font-size:14px;color:var(--text-dim);max-width:680px;margin:0 auto;}
+
+  .tabs{display:flex;justify-content:center;gap:4px;margin-bottom:20px;flex-wrap:wrap;}
+  .tab{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 18px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);cursor:pointer;transition:all .2s;}
+  .tab:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-dim);}
+  .tab.active{background:var(--accent);color:var(--bg);border-color:var(--accent);}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);margin-bottom:16px;}
+  .card-title{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+  .card-title .dot{width:7px;height:7px;border-radius:50%;}
+
+  .sec-title{font-family:'Instrument Serif',serif;font-size:24px;color:var(--text-bright);margin-bottom:10px;display:flex;align-items:baseline;gap:10px;}
+  .sec-title .num{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent);background:var(--accent-dim);padding:4px 10px;border-radius:6px;letter-spacing:1px;}
+  .sec-sub{font-size:13.5px;color:var(--text-dim);margin-bottom:16px;}
+
+  .controls{display:flex;align-items:center;justify-content:center;gap:10px;margin:14px 0;flex-wrap:wrap;}
+  .btn{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;transition:all .2s;}
+  .btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-dim);}
+  .btn.primary{background:var(--accent);color:var(--bg);border-color:var(--accent);}
+  .btn.primary:hover{background:#7ad2ff;}
+  .btn:disabled{opacity:.35;cursor:not-allowed;}
+  .btn:disabled:hover{border-color:var(--border);color:var(--text);background:var(--surface);}
+  .speed{display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);}
+  .speed input[type=range]{width:80px;accent-color:var(--accent);}
+  .step-info{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);text-align:center;margin-bottom:6px;}
+
+  .narr{background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;font-size:13.5px;min-height:48px;}
+  .narr .hl{color:var(--accent);font-weight:600;}
+  .narr .grn{color:var(--green);font-weight:600;}
+  .narr .org{color:var(--orange);font-weight:600;}
+  .narr .red{color:var(--red);font-weight:600;}
+  .narr .pur{color:var(--purple);font-weight:600;}
+  .narr .ylw{color:var(--yellow);font-weight:600;}
+  .narr code{font-family:'JetBrains Mono',monospace;background:var(--bg2);padding:1px 6px;border-radius:4px;font-size:12px;color:var(--orange);}
+
+  /* ===== Houses & Offers visualization ===== */
+  .stage{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:18px 16px 12px;margin:14px 0;overflow-x:auto;}
+  .stage-label{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--text-dim);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:8px;}
+
+  .houses{display:flex;gap:6px;justify-content:center;margin:6px 0;}
+  .house{
+    width:54px;height:54px;border-radius:8px;background:var(--surface);
+    border:1.5px solid var(--border);position:relative;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'JetBrains Mono',monospace;font-weight:700;font-size:15px;color:var(--text);
+    transition:all .25s;
+  }
+  .house .idx{position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--text-dim);font-weight:500;}
+  .house .roof{position:absolute;top:-8px;left:0;right:0;height:14px;background:var(--surface);border-left:1.5px solid var(--border);border-right:1.5px solid var(--border);clip-path:polygon(0 100%,50% 0,100% 100%);}
+  .house.in-offer{border-color:var(--orange);background:var(--orange-dim);color:var(--orange);box-shadow:0 0 16px rgba(255,180,84,.25);}
+
+  .offers-track{display:flex;flex-direction:column;gap:8px;margin-top:18px;}
+  .offer-row{display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);}
+  .offer-row .tag{width:30px;text-align:right;flex-shrink:0;}
+  .offer-bar-wrap{position:relative;height:26px;display:flex;flex-shrink:0;}
+  .offer-bar{
+    position:absolute;height:22px;border-radius:5px;display:flex;align-items:center;justify-content:center;
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:600;
+    background:var(--accent-dim);border:1px solid var(--accent);color:var(--accent);
+    transition:all .25s;top:2px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 6px;
+  }
+  .offer-bar.dim{opacity:.35;}
+  .offer-bar.active{background:var(--orange-dim);border-color:var(--orange);color:var(--orange);box-shadow:0 0 18px rgba(255,180,84,.4);z-index:2;}
+  .offer-bar.taken{background:var(--green-dim);border-color:var(--green);color:var(--green);}
+  .offer-bar.narrow{font-size:9.5px;letter-spacing:-.2px;}
+
+  /* ===== DP array ===== */
+  .dp-arr{display:flex;gap:5px;justify-content:center;margin:18px 0 28px;flex-wrap:nowrap;overflow-x:auto;padding:24px 12px 14px;}
+  .dp-cell{
+    min-width:54px;height:60px;border-radius:8px;background:var(--surface);
+    border:1.5px solid var(--border);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    font-family:'JetBrains Mono',monospace;font-weight:700;font-size:18px;color:var(--text-bright);
+    position:relative;transition:all .25s;
+  }
+  .dp-cell .lbl{position:absolute;top:-18px;font-size:10.5px;color:var(--text-dim);font-weight:500;letter-spacing:.5px;}
+  .dp-cell.unset{color:var(--text-dim);font-size:14px;background:var(--bg2);}
+  .dp-cell.cur{outline:3px solid var(--yellow);outline-offset:2px;box-shadow:0 0 22px rgba(255,213,128,.55);z-index:2;}
+  .dp-cell.src{outline:2px solid var(--accent);outline-offset:2px;background:var(--accent-dim);color:var(--accent);}
+  .dp-cell.src-take{outline:2px solid var(--purple);outline-offset:2px;background:var(--purple-dim);color:var(--purple);}
+  .dp-cell.updated{background:var(--green-dim);border-color:var(--green);color:var(--green);}
+
+  .calc-line{
+    background:var(--bg2);border:1px solid var(--border);border-radius:8px;
+    padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:13px;
+    color:var(--text);text-align:center;margin:10px 0;letter-spacing:.3px;
+  }
+  .calc-line .skip{color:var(--accent);}
+  .calc-line .take{color:var(--purple);}
+  .calc-line .win{color:var(--green);font-weight:700;}
+  .calc-line .lose{color:var(--text-dim);text-decoration:line-through;}
+
+  .legend{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);}
+  .legend .item{display:flex;align-items:center;gap:6px;}
+  .legend .box{width:14px;height:14px;border-radius:3px;border:2px solid;}
+
+  pre.code{background:#0d1017;border:1px solid var(--border);border-radius:8px;padding:16px 18px;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.7;color:#d4dce8;margin:10px 0;tab-size:4;}
+  pre.code .kw{color:#ff79c6;font-weight:600;}
+  pre.code .ty{color:#8be9fd;}
+  pre.code .fn{color:#50fa7b;}
+  pre.code .num{color:#ffb454;}
+  pre.code .str{color:#f1fa8c;}
+  pre.code .cm{color:#6272a4;font-style:italic;}
+  pre.code .cst{color:#bd93f9;font-weight:600;}
+
+  code.inline{font-family:'JetBrains Mono',monospace;background:var(--surface2);padding:2px 7px;border-radius:5px;font-size:12px;color:var(--orange);border:1px solid var(--border);}
+
+  table.info{width:100%;border-collapse:collapse;font-size:13px;}
+  table.info th,table.info td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);vertical-align:top;}
+  table.info th{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);font-weight:600;background:var(--bg2);}
+  table.info td.mono{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--orange);}
+  table.info tr:last-child td{border-bottom:none;}
+
+  .callout{background:var(--surface2);border-left:3px solid var(--accent);padding:12px 16px;border-radius:6px;margin:14px 0;font-size:13px;}
+  .callout.warn{border-left-color:var(--orange);}
+  .callout.good{border-left-color:var(--green);}
+  .callout.bad{border-left-color:var(--red);}
+  .callout.pur{border-left-color:var(--purple);}
+  .callout b{color:var(--text-bright);}
+
+  .hl{color:var(--accent);font-weight:600;}
+  .grn{color:var(--green);font-weight:600;}
+  .org{color:var(--orange);font-weight:600;}
+  .red{color:var(--red);font-weight:600;}
+  .ylw{color:var(--yellow);font-weight:600;}
+  .pur{color:var(--purple);font-weight:600;}
+
+  ul,ol{padding-left:22px;}
+  li{margin-bottom:6px;font-size:13.5px;}
+
+  .formula-box{
+    background:var(--bg2);border:1px solid var(--border);border-radius:8px;
+    padding:14px 18px;font-family:'JetBrains Mono',monospace;font-size:14px;
+    color:var(--text-bright);text-align:center;margin:10px 0;
+  }
+
+  .group-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-top:12px;}
+  .group-item{background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;}
+  .group-item .gh{color:var(--accent);font-weight:600;margin-bottom:4px;font-size:11px;letter-spacing:1px;}
+  .group-item .ge{color:var(--text);font-size:12px;}
+  .group-item.empty .ge{color:var(--text-dim);}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="eyebrow">LC 2830 · Maximize the Profit as the Salesman · Medium</div>
+    <h1>Maximize Profit <em>DP 動畫教學</em></h1>
+    <p class="subtitle">用「<span class="ylw">按 end 分組</span>」的 1D DP 解一道<span class="hl">加權區間排程</span>問題。</p>
+  </header>
+
+  <div id="app"></div>
+</div>
+
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.2/babel.min.js"></script>
+<script type="text/babel">
+const { useState, useEffect, useRef, useMemo } = React;
+
+/* ========== C++ highlighter ========== */
+const KW = ['int','void','auto','const','return','if','else','while','for','do','bool','char','public','class','static','struct'];
+const TY = ['vector','string','pair'];
+const CST = ['true','false','nullptr','NULL'];
+
+function hlCpp(code){
+  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const stash=[];
+  const keep = h => { const n = stash.length; stash.push(h); return 'MKzz'+n+'zzMK'; };
+  let s = esc(code);
+  s = s.replace(/\/\/[^\n]*/g, m => keep('<span class="cm">'+m+'</span>'));
+  s = s.replace(/"(?:\\.|[^"\\])*"/g, m => keep('<span class="str">'+m+'</span>'));
+  s = s.replace(/'(?:\\.|[^'\\])*'/g, m => keep('<span class="str">'+m+'</span>'));
+  s = s.replace(new RegExp('\\b('+KW.join('|')+')\\b','g'), '<span class="kw">$1</span>');
+  s = s.replace(new RegExp('\\b('+TY.join('|')+')\\b','g'), '<span class="ty">$1</span>');
+  s = s.replace(new RegExp('\\b('+CST.join('|')+')\\b','g'), '<span class="cst">$1</span>');
+  s = s.replace(/\b(\d+)\b/g, '<span class="num">$1</span>');
+  s = s.replace(/\b([a-zA-Z_]\w*)(?=\s*\()/g, '<span class="fn">$1</span>');
+  s = s.replace(/MKzz(\d+)zzMK/g, (_,i)=>stash[+i]);
+  return s;
+}
+function Code({children}){ return <pre className="code" dangerouslySetInnerHTML={{__html:hlCpp(children)}}/>; }
+
+/* ========== DP simulator ========== */
+function simDP(n, offers){
+  const endGroups = Array.from({length:n}, ()=>[]);
+  for(const [s,e,g] of offers) endGroups[e].push([s,g]);
+
+  const dp = new Array(n+1).fill(null);
+  const steps = [];
+  const taken = new Set();        // taken offers, by offer index in `offers`
+  const indexOf = (st,en,gd) => offers.findIndex(o=>o[0]===st&&o[1]===en&&o[2]===gd);
+
+  const snap = (extra) => steps.push({
+    dp: dp.slice(),
+    activeRange: null,
+    activeOfferIdx: -1,
+    cur: -1,
+    src: -1,
+    srcTake: -1,
+    taken: new Set(taken),
+    ...extra,
+  });
+
+  dp[0] = 0;
+  snap({cur:0, narr:'<b>初始化：</b><code>dp[0] = 0</code>。考慮 0 個房子時收益為 0。'});
+
+  for(let i = 1; i <= n; i++){
+    // Step 1: skip case
+    dp[i] = dp[i-1];
+    snap({
+      cur:i, src:i-1,
+      narr:'<span class="hl">i = '+i+'</span>：先用<span class="hl">「不結束 offer」</span>當基準 → <code>dp['+i+'] = dp['+(i-1)+'] = '+dp[i-1]+'</code>。'
+    });
+
+    // Try each offer ending at i-1
+    const grp = endGroups[i-1];
+    if(grp.length === 0){
+      snap({
+        cur:i,
+        narr:'沒有任何 offer 結束在房子 <code>'+(i-1)+'</code> → <code>dp['+i+']</code> 維持 <span class="grn">'+dp[i]+'</span>。'
+      });
+    }
+
+    for(const [start, gold] of grp){
+      const candidate = dp[start] + gold;
+      const took = candidate > dp[i];
+      const oldVal = dp[i];
+      const offerIdx = indexOf(start, i-1, gold);
+
+      let narr = '<span class="org">嘗試 offer</span> <code>['+start+', '+(i-1)+', gold='+gold+']</code>：';
+      narr += ' 候選 = <code>dp['+start+'] + '+gold+' = '+dp[start]+' + '+gold+' = '+candidate+'</code>。';
+      narr += ' 對比目前 <code>dp['+i+']='+oldVal+'</code> → ';
+      if(took){
+        narr += '<span class="grn">'+candidate+' &gt; '+oldVal+'，更新！</span>';
+        dp[i] = candidate;
+        taken.add(offerIdx);
+        // If we updated, the prior "best path" up to this i may have used a different offer ending at i-1; remove other "ending at i-1" markings (visual only, optional)
+      } else {
+        narr += '<span class="red">'+candidate+' &le; '+oldVal+'，不更新。</span>';
+      }
+
+      snap({
+        cur:i, src:start, srcTake: took ? start : -1,
+        activeRange:[start, i-1], activeOfferIdx: offerIdx,
+        candidate, oldVal, took, gold,
+        narr
+      });
+    }
+  }
+
+  snap({
+    cur:n,
+    narr:'<b>完成！</b>最終 <code>dp['+n+'] = <span class="grn">'+dp[n]+'</span></code>。 → 答案：<span class="ylw">'+dp[n]+'</span>'
+  });
+  return steps;
+}
+
+/* ========== Houses + Offers display ========== */
+function HousesAndOffers({n, offers, step}){
+  const active = step.activeRange;
+  const activeIdx = step.activeOfferIdx;
+  const taken = step.taken;
+  const cellW = 54, gap = 6;
+  const totalW = n * cellW + (n-1) * gap;
+
+  return (
+    <div className="stage">
+      <div className="stage-label">Houses (n = {n}) &amp; Offers</div>
+      <div className="houses" style={{paddingTop:8}}>
+        {Array.from({length:n}).map((_,h)=>{
+          const inActive = active && h>=active[0] && h<=active[1];
+          return (
+            <div key={h} className={'house'+(inActive?' in-offer':'')}>
+              <span className="idx">{h}</span>
+              <span>🏠</span>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="offers-track" style={{width:totalW,margin:'18px auto 4px'}}>
+        {offers.map(([s,e,g], k)=>{
+          const left = s * (cellW + gap);
+          const width = (e - s + 1) * cellW + (e - s) * gap;
+          const isActive = activeIdx === k;
+          const isTaken = taken.has(k) && !isActive;
+          const narrow = width < 70;
+          const cls = 'offer-bar' + (isActive?' active':'') + (isTaken?' taken':'') + (!isActive && !isTaken?' dim':'') + (narrow?' narrow':'');
+          const label = narrow ? '$'+g : '['+s+','+e+'] · $'+g;
+          return (
+            <div key={k} className="offer-row">
+              <span className="tag">#{k}</span>
+              <div className="offer-bar-wrap" style={{width:totalW}}>
+                <div className={cls} style={{left, width}} title={'['+s+','+e+'] · $'+g}>
+                  {label}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ========== DP array display ========== */
+function DPArray({n, step}){
+  const {dp, cur, src, srcTake} = step;
+  return (
+    <div className="dp-arr">
+      {dp.map((v,i)=>{
+        let cls = 'dp-cell';
+        if(v === null) cls += ' unset';
+        if(i === cur) cls += ' cur';
+        else if(i === srcTake) cls += ' src-take';
+        else if(i === src) cls += ' src';
+        return (
+          <div key={i} className={cls}>
+            <span className="lbl">dp[{i}]</span>
+            {v === null ? '·' : v}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ========== Player ========== */
+function Player({steps, speed, setSpeed, render}){
+  const [i,setI] = useState(0);
+  const [playing,setPlaying] = useState(false);
+  const iref = useRef(i); iref.current = i;
+  useEffect(()=>{
+    if(!playing) return;
+    const t = setTimeout(()=>{
+      if(iref.current < steps.length-1) setI(iref.current+1);
+      else setPlaying(false);
+    }, 1500 - speed*120);
+    return ()=>clearTimeout(t);
+  },[i,playing,speed,steps.length]);
+  useEffect(()=>{setI(0);setPlaying(false);},[steps]);
+
+  const s = steps[i];
+  return (
+    <>
+      <div className="step-info">Step {i+1} / {steps.length}</div>
+      <div className="narr" dangerouslySetInnerHTML={{__html:s.narr}}/>
+      {render(s)}
+      <div className="legend">
+        <div className="item"><div className="box" style={{borderColor:'var(--yellow)',background:'rgba(255,213,128,.2)'}}></div>正在計算 dp[i]</div>
+        <div className="item"><div className="box" style={{borderColor:'var(--accent)'}}></div>來源 dp[i-1]（skip）</div>
+        <div className="item"><div className="box" style={{borderColor:'var(--purple)'}}></div>來源 dp[start]（take）</div>
+        <div className="item"><div className="box" style={{borderColor:'var(--orange)'}}></div>當前 offer</div>
+        <div className="item"><div className="box" style={{borderColor:'var(--green)'}}></div>已採用過的 offer</div>
+      </div>
+      <div className="controls">
+        <button className="btn" onClick={()=>{setI(0);setPlaying(false);}}>⟲ Reset</button>
+        <button className="btn" onClick={()=>{setPlaying(false);setI(Math.max(0,i-1));}} disabled={i===0}>← Prev</button>
+        <button className="btn primary" onClick={()=>{if(i>=steps.length-1)setI(0);setPlaying(!playing);}}>
+          {playing?'❚❚ Pause':'▶ Play'}
+        </button>
+        <button className="btn" onClick={()=>{setPlaying(false);setI(Math.min(steps.length-1,i+1));}} disabled={i===steps.length-1}>Next →</button>
+        <div className="speed">Speed<input type="range" min="1" max="10" value={speed} onChange={e=>setSpeed(+e.target.value)}/>{speed}x</div>
+      </div>
+    </>
+  );
+}
+
+/* ========== Sections ========== */
+
+function Intro(){
+  return (
+    <>
+      <h2 className="sec-title"><span className="num">01</span>Problem — LC 2830</h2>
+      <p className="sec-sub">街上有 n 棟房子（編號 0 ~ n-1），收到一些<span className="org">買家 offer</span>。每筆 offer = <code className="inline">[start, end, gold]</code>，意思是「我願意花 gold 元打包買下房子 start ~ end（連續區間）」。</p>
+
+      <div className="card">
+        <div className="card-title"><span className="dot" style={{background:'var(--yellow)'}}></span>規則</div>
+        <ul>
+          <li>每棟房子<span className="hl">最多賣一次</span>（offer 不能重疊）</li>
+          <li>不一定要把所有房子賣掉，沒賣出 = 沒收益但也沒罰金</li>
+          <li>挑選一組<span className="ylw">兩兩不重疊</span>的 offer，使<span className="grn">總金額最大</span></li>
+        </ul>
+
+        <table className="info" style={{marginTop:14}}>
+          <thead><tr><th>n</th><th>offers</th><th>答案</th><th>選法</th></tr></thead>
+          <tbody>
+            <tr>
+              <td className="mono">5</td>
+              <td className="mono">[[0,0,1],[0,2,2],[1,3,2]]</td>
+              <td><span className="grn">3</span></td>
+              <td>[0,0]=1 + [1,3]=2</td>
+            </tr>
+            <tr>
+              <td className="mono">5</td>
+              <td className="mono">[[0,0,1],[0,2,10],[1,3,2]]</td>
+              <td><span className="grn">10</span></td>
+              <td>只挑 [0,2]=10</td>
+            </tr>
+            <tr>
+              <td className="mono">4</td>
+              <td className="mono">[[0,0,1],[0,2,2],[1,3,2],[2,3,3]]</td>
+              <td><span className="grn">4</span></td>
+              <td>[0,0]=1 + [2,3]=3</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div className="card">
+        <div className="card-title"><span className="dot" style={{background:'var(--accent)'}}></span>這是哪一類問題？</div>
+        <p>這是經典的 <span className="hl">Weighted Interval Scheduling</span>（加權區間排程）。差別只在於「資源」是離散的房子編號 0 ~ n-1，所以可以用 <code className="inline">dp[i]</code> 而不需要二分搜尋找前一個不重疊的區間。</p>
+
+        <div className="callout pur">
+          <b>關鍵直覺：</b>把問題拆成「<span class="hl">前 i 個房子</span>」的子問題。對每一棟房子 <code className="inline">i-1</code>，決定它是<span className="org">當作沒人買</span>，還是<span className="pur">作為某個 offer 的尾巴被打包賣掉</span>。
+        </div>
+      </div>
+    </>
+  );
+}
+
+function Definition(){
+  return (
+    <>
+      <h2 className="sec-title"><span className="num">02</span>DP 定義 + 轉移方程</h2>
+      <p className="sec-sub">把連續區間 [0, n-1] 切成「前 i 個房子」的子問題，由小到大推。</p>
+
+      <div className="card">
+        <div className="card-title"><span className="dot" style={{background:'var(--yellow)'}}></span>狀態定義</div>
+        <div className="formula-box">
+          <span className="hl">dp[i]</span> = 只考慮房子 <span className="ylw">0 ~ i-1</span> 時，能拿到的<span className="grn">最大金額</span>
+        </div>
+        <p style={{marginTop:8,fontSize:13.5}}>長度 <code className="inline">n+1</code>，答案 = <code className="inline">dp[n]</code>。</p>
+      </div>
+
+      <div className="card">
+        <div className="card-title"><span className="dot" style={{background:'var(--accent)'}}></span>轉移：兩種選擇</div>
+        <p style={{fontSize:13.5,marginBottom:8}}>計算 <code className="inline">dp[i]</code> 時，看「房子 <span className="ylw">i-1</span>」這棟最後變怎麼樣：</p>
+
+        <div className="formula-box" style={{textAlign:'left',padding:'16px 22px',lineHeight:2}}>
+          <div><span className="hl">選擇 1（skip）：</span>房子 i-1 不結束任何 offer<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;→ <code style={{color:'var(--accent)'}}>dp[i] = dp[i-1]</code>
+          </div>
+          <div style={{marginTop:8}}><span className="pur">選擇 2（take）：</span>對每個結束於 i-1 的 offer <code style={{color:'var(--orange)'}}>(start, gold)</code><br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;→ <code style={{color:'var(--purple)'}}>dp[i] = max(dp[i], dp[start] + gold)</code>
+          </div>
+        </div>
+
+        <div className="callout warn" style={{marginTop:14}}>
+          <b>為什麼是 <code className="inline">dp[start]</code> 而不是 <code className="inline">dp[start-1]</code>？</b><br/>
+          因為 offer <code className="inline">[start, end]</code> <span className="hl">包含房子 start</span>。要把 [start..end] 整段賣給這位買家，房子 start 必須留給他，所以前面只能用<span className="ylw">房子 0 ~ start-1</span> 的最佳收益 = <code className="inline">dp[start]</code>（注意定義：dp[i] 是前 i 個 = 0..i-1）。
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-title"><span className="dot" style={{background:'var(--green)'}}></span>Base Case</div>
+        <div className="formula-box">
+          <code className="inline" style={{fontSize:14}}>dp[0] = 0</code> &nbsp;&nbsp; (考慮 0 個房子 → 0 元)
+        </div>
+      </div>
+    </>
+  );
+}
+
+function Preprocess(){
+  const offers = [[0,0,1],[0,2,2],[1,3,2],[2,3,3]];
+  const n = 4;
+  const groups = Array.from({length:n}, ()=>[]);
+  offers.forEach(([s,e,g],k)=>groups[e].push({k,s,g}));
+
+  return (
+    <>
+      <h2 className="sec-title"><span className="num">03</span>預處理：按 end 分組</h2>
+      <p className="sec-sub">把 offers 按結尾位置分桶 → 計算 <code className="inline">dp[i]</code> 時只需看「結束於 i-1」的那一桶。</p>
+
+      <div className="card">
+        <div className="card-title"><span className="dot" style={{background:'var(--orange)'}}></span>為什麼要分組？</div>
+
+        <table className="info">
+          <thead><tr><th></th><th className="mono" style={{color:'var(--red)'}}>不分組（naive）</th><th className="mono" style={{color:'var(--green)'}}>按 end 分組</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><b>每個 i 要做什麼</b></td>
+              <td>掃<span className="red">全部</span> offers，篩出 end == i-1</td>
+              <td>直接拿 <code className="inline">endGroups[i-1]</code></td>
+            </tr>
+            <tr>
+              <td><b>時間複雜度</b></td>
+              <td className="mono"><span className="red">O(n × m)</span></td>
+              <td className="mono"><span className="grn">O(n + m)</span></td>
+            </tr>
+            <tr>
+              <td><b>邏輯</b></td>
+              <td>每筆 offer 被掃 n 次</td>
+              <td>每筆 offer 只被「該結束的那一格」用一次</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p style={{marginTop:14,fontSize:13.5}}>m = offers 數量。雖然 LeetCode 的 n 和 m 通常都到 1e5，這個優化把 O(nm)=10<sup>10</sup> 降到 O(n+m)=2×10<sup>5</sup>。</p>
+      </div>
+
+      <div className="card">
+        <div className="card-title"><span className="dot" style={{background:'var(--accent)'}}></span>範例：n = 4, offers = {JSON.stringify(offers)}</div>
+
+        <div className="group-list">
+          {groups.map((g, e)=>(
+            <div key={e} className={'group-item'+(g.length===0?' empty':'')}>
+              <div className="gh">endGroups[{e}]</div>
+              <div className="ge">
+                {g.length===0 ? '(空)' : g.map(o=>'(start='+o.s+', gold='+o.g+')').join(', ')}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <Code>{`vector<vector<pair<int, int>>> endGroups(n);
+for (const auto& o : offers) {
+    endGroups[o[1]].emplace_back(o[0], o[2]);
+}`}</Code>
+      </div>
+    </>
+  );
+}
+
+function MainDemo({steps, speed, setSpeed, n, offers}){
+  return (
+    <>
+      <h2 className="sec-title"><span className="num">04</span>完整範例動畫</h2>
+      <p className="sec-sub">n = {n}，offers = {JSON.stringify(offers)}。<span className="ylw">黃框</span>是當前 dp[i]，<span className="hl">藍框</span>是 skip 來源 dp[i-1]，<span className="pur">紫框</span>是 take 來源 dp[start]，<span className="org">橘色 offer 條</span>是當前嘗試的 offer。</p>
+
+      <div className="card">
+        <Player steps={steps} speed={speed} setSpeed={setSpeed}
+          render={step => (
+            <>
+              <HousesAndOffers n={n} offers={offers} step={step}/>
+              <DPArray n={n} step={step}/>
+            </>
+          )}/>
+      </div>
+
+      <div className="card">
+        <div className="card-title"><span className="dot" style={{background:'var(--purple)'}}></span>觀察重點</div>
+        <ul>
+          <li><b>每個 i 都先做 skip</b>：<code className="inline">dp[i] = dp[i-1]</code> 把上一步的最佳結果繼承下來。</li>
+          <li><b>再對結束於 i-1 的每筆 offer 做 take 嘗試</b>：候選 = <code className="inline">dp[start] + gold</code>，比現有 <code className="inline">dp[i]</code> 大就更新。</li>
+          <li><b>多筆同 end 的 offer</b>：直接全部試一遍取 max（看 <code className="inline">i = 4</code> 那一格，有 [1,3,2] 跟 [2,3,3] 兩個 offer 同時結束）。</li>
+          <li><b>區間不重疊保證</b>：用 <code className="inline">dp[start]</code> 而不是 <code className="inline">dp[end]</code> 已經<span className="ylw">天然</span>切開了，子問題的選擇都在房子 0 ~ start-1，不會碰到 start ~ end。</li>
+        </ul>
+      </div>
+    </>
+  );
+}
+
+function WhyStart(){
+  return (
+    <>
+      <h2 className="sec-title"><span className="num">05</span>深入：<em>dp[start]</em> vs <em>dp[start-1]</em>?</h2>
+      <p className="sec-sub">這是這題最容易卡住的細節。為什麼前綴的截止點是 <code className="inline">start</code> 不是 <code className="inline">start-1</code>？</p>
+
+      <div className="card">
+        <div className="card-title"><span className="dot" style={{background:'var(--yellow)'}}></span>回到定義</div>
+        <p>記住：<span className="hl">dp[i] 是「前 i 個房子」的最佳值，覆蓋編號 0 ~ i-1</span>。</p>
+
+        <div className="callout">
+          <table className="info" style={{marginTop:0}}>
+            <thead><tr><th>表達式</th><th>覆蓋的房子編號</th><th>含意</th></tr></thead>
+            <tbody>
+              <tr><td className="mono">dp[start]</td><td className="mono">0 ~ start-1</td><td>不含 start</td></tr>
+              <tr><td className="mono">dp[start-1]</td><td className="mono">0 ~ start-2</td><td>不含 start-1, start</td></tr>
+              <tr><td className="mono">dp[end+1]</td><td className="mono">0 ~ end</td><td>含整個 [start, end]</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p style={{marginTop:14,fontSize:13.5}}>當我們「採用 offer <code className="inline">[start, end]</code>」時，房子 <span className="org">start, start+1, ..., end</span> 都被這個 offer 占用。前面剩下的可獨立決策的房子是 <span className="hl">0 ~ start-1</span>。</p>
+
+        <div className="formula-box" style={{marginTop:14}}>
+          要組成 dp[end+1] = (前 start 個房子的最佳) + gold<br/>
+          &nbsp;&nbsp;&nbsp;&nbsp;= <span className="hl">dp[start]</span> + gold
+        </div>
+
+        <div className="callout bad" style={{marginTop:14}}>
+          <b>常見錯誤：</b>
+          <ul style={{marginTop:6}}>
+            <li><span className="red">❌</span> <code className="inline">dp[start-1] + gold</code> → 漏算了房子 <code className="inline">start-1</code> 的決策。</li>
+            <li><span className="red">❌</span> <code className="inline">dp[end] + gold</code> → 房子 <code className="inline">end</code> 已經被前綴占用了，再被 offer 用一次 = 重複。</li>
+          </ul>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-title"><span className="dot" style={{background:'var(--accent)'}}></span>圖解：take offer [1, 3, 2]</div>
+        <p style={{fontSize:13.5,marginBottom:10}}>假設 i=4（正在算 dp[4]），嘗試 offer <code className="inline">(start=1, end=3, gold=2)</code>：</p>
+
+        <div className="stage">
+          <div className="houses">
+            <div className="house" style={{borderColor:'var(--accent)',background:'var(--accent-dim)',color:'var(--accent)'}}>
+              <span className="idx">0</span><span>🏠</span>
+            </div>
+            <div className="house in-offer">
+              <span className="idx">1</span><span>🏠</span>
+            </div>
+            <div className="house in-offer">
+              <span className="idx">2</span><span>🏠</span>
+            </div>
+            <div className="house in-offer">
+              <span className="idx">3</span><span>🏠</span>
+            </div>
+          </div>
+          <div style={{textAlign:'center',marginTop:24,fontFamily:'JetBrains Mono, monospace',fontSize:12,color:'var(--text-dim)'}}>
+            <span style={{color:'var(--accent)'}}>◀ 房子 0：dp[1] 的範圍（= dp[start]）</span>
+            　|
+            <span style={{color:'var(--orange)'}}>房子 1~3：被 offer 占用 ▶</span>
+          </div>
+          <div style={{textAlign:'center',marginTop:8,fontFamily:'JetBrains Mono, monospace',fontSize:13,color:'var(--text-bright)'}}>
+            dp[4] = <span style={{color:'var(--purple)'}}>dp[1]</span> + <span style={{color:'var(--orange)'}}>2</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-title"><span className="dot" style={{background:'var(--green)'}}></span>跟 LIS / Knapsack 的差別</div>
+        <table className="info">
+          <thead><tr><th>問題</th><th>狀態</th><th>轉移特徵</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>0/1 Knapsack</td>
+              <td><code className="inline">dp[i][w]</code></td>
+              <td>每個 item 二選一</td>
+            </tr>
+            <tr>
+              <td>LIS</td>
+              <td><code className="inline">dp[i]</code> = 以 i 結尾</td>
+              <td>需要掃前面合法的 j</td>
+            </tr>
+            <tr>
+              <td><span className="ylw">本題</span></td>
+              <td><code className="inline">dp[i]</code> = 前 i 個</td>
+              <td>「結束在 i-1 的 offer」是 O(1) 攤銷查找</td>
+            </tr>
+            <tr>
+              <td>Weighted Interval Scheduling</td>
+              <td><code className="inline">dp[k]</code> = 前 k 個 offer</td>
+              <td>需要二分搜尋找前一個不重疊的</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+}
+
+function CodeSection(){
+  return (
+    <>
+      <h2 className="sec-title"><span className="num">06</span>完整 C++ 實作</h2>
+
+      <div className="card">
+        <div className="card-title"><span className="dot" style={{background:'var(--accent)'}}></span>原始解法</div>
+        <Code>{`class Solution {
+public:
+    int maximizeTheProfit(int n, vector<vector<int>>& offers) {
+        // 把 offers 按 end 分組: endGroups[end] = list of (start, gold)
+        vector<vector<pair<int, int>>> endGroups(n);
+        for (const auto& o : offers) {
+            endGroups[o[1]].emplace_back(o[0], o[2]);
+        }
+
+        // dp[i] = 考慮房子 0~i-1 時的最大金額
+        vector<int> dp(n + 1, 0);
+
+        for (int i = 1; i <= n; ++i) {
+            // 選擇 1: 不在 i-1 結束任何 offer
+            dp[i] = dp[i - 1];
+
+            // 選擇 2: 嘗試以 i-1 為結尾的每個 offer
+            for (const auto& [start, gold] : endGroups[i - 1]) {
+                dp[i] = max(dp[i], dp[start] + gold);
+            }
+        }
+
+        return dp[n];
+    }
+};`}</Code>
+
+        <div className="callout good">
+          <b>Complexity：</b><br/>
+          • Time = O(n + m)，m = offers.size()。每筆 offer 在內層 loop 只被處理一次。<br/>
+          • Space = O(n + m) 用在 dp 陣列和 endGroups。
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-title"><span className="dot" style={{background:'var(--purple)'}}></span>Top-down Memoization 對照</div>
+        <Code>{`class Solution {
+    vector<vector<pair<int,int>>> startGroups; // groups by start
+    vector<int> memo;
+    int n;
+
+    int solve(int i) {
+        if (i >= n) return 0;
+        if (memo[i] != -1) return memo[i];
+
+        // skip house i
+        int best = solve(i + 1);
+
+        // try each offer starting at i
+        for (auto& [end, gold] : startGroups[i]) {
+            best = max(best, gold + solve(end + 1));
+        }
+        return memo[i] = best;
+    }
+
+public:
+    int maximizeTheProfit(int n_, vector<vector<int>>& offers) {
+        n = n_;
+        startGroups.assign(n, {});
+        memo.assign(n, -1);
+        for (auto& o : offers)
+            startGroups[o[0]].push_back({o[1], o[2]});
+        return solve(0);
+    }
+};`}</Code>
+
+        <div className="callout pur">
+          <b>對照：</b>top-down 用「按 start 分組」更自然（站在 i，往後跳到 end+1）；bottom-up 用「按 end 分組」更自然（站在 i，往回追到 start）。兩個方向<span className="hl">完全等價</span>。
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-title"><span className="dot" style={{background:'var(--yellow)'}}></span>常見變形</div>
+        <ul>
+          <li><b>區間是 0-indexed 但 end 不在房子集合裡</b>（例如「times」型問題）：把 endGroups 索引擴大到 n+1，dp 陣列也對應放大。</li>
+          <li><b>Offer 數量很大但 n 也很大</b>：本題的解法已是線性，不需要二分搜尋版本。</li>
+          <li><b>連續區間改為任意 item 集合</b>（不再保證連續）：退化成 0/1 Knapsack-like。</li>
+        </ul>
+      </div>
+    </>
+  );
+}
+
+/* ========== App ========== */
+const TOPICS = [
+  {key:'intro',  label:'① Problem'},
+  {key:'def',    label:'② DP 定義'},
+  {key:'pre',    label:'③ endGroups 預處理'},
+  {key:'main',   label:'④ 完整動畫'},
+  {key:'why',    label:'⑤ dp[start] 深入'},
+  {key:'code',   label:'⑥ Code'},
+];
+
+const DEMO_N = 4;
+const DEMO_OFFERS = [[0,0,1],[0,2,2],[1,3,2],[2,3,3]];
+
+function App(){
+  const [tab,setTab] = useState('intro');
+  const [speed,setSpeed] = useState(5);
+  const mainSteps = useMemo(()=>simDP(DEMO_N, DEMO_OFFERS), []);
+
+  return (
+    <div>
+      <div className="tabs">
+        {TOPICS.map(t=>(
+          <button key={t.key} className={"tab"+(tab===t.key?" active":"")} onClick={()=>setTab(t.key)}>{t.label}</button>
+        ))}
+      </div>
+
+      {tab==='intro' && <Intro/>}
+      {tab==='def'   && <Definition/>}
+      {tab==='pre'   && <Preprocess/>}
+      {tab==='main'  && <MainDemo steps={mainSteps} speed={speed} setSpeed={setSpeed} n={DEMO_N} offers={DEMO_OFFERS}/>}
+      {tab==='why'   && <WhyStart/>}
+      {tab==='code'  && <CodeSection/>}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('app')).render(<App/>);
+</script>
+</body>
+</html>
